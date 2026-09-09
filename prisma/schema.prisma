@@ -23,6 +23,32 @@ enum AppointmentStatus {
   NO_SHOW
 }
 
+enum MeetingType {
+  CHILD
+  PARENT_A
+  PARENT_B
+  BOTH_PARENTS
+}
+
+enum BillingArrangement {
+  REGULAR
+  SHARED_SINGLE_INVOICE
+  SHARED_SEPARATE_INVOICES
+}
+
+enum InvoiceKind {
+  SINGLE
+  PARENT_A_SHARE
+  PARENT_B_SHARE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  VOID
+}
+
 model User {
   id           String             @id @default(cuid())
   email        String             @unique
@@ -40,8 +66,9 @@ model Clinic {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   memberships   ClinicMembership[]
-  patients      Patient[]
-  appointments  Appointment[]
+  clients       Client[]
+  meetings      Meeting[]
+  invoices      Invoice[]
   auditEvents   AuditLog[]
 
   @@index([name])
@@ -60,32 +87,62 @@ model ClinicMembership {
   @@index([clinicId])
 }
 
-model Patient {
-  id          String        @id @default(cuid())
-  clinicId    String
-  externalRef String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  clinic      Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
+model Client {
+  id             String          @id @default(cuid())
+  clinicId       String
+  externalRef    String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  clinic         Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  childMeetings  Meeting[]       @relation("MeetingChild")
+  parentAMeetings Meeting[]      @relation("MeetingParentA")
+  parentBMeetings Meeting[]      @relation("MeetingParentB")
+  invoices       Invoice[]
 
   @@unique([clinicId, externalRef])
   @@index([clinicId])
 }
 
-model Appointment {
-  id        String            @id @default(cuid())
-  clinicId  String
-  patientId String
-  startsAt  DateTime
-  status    AppointmentStatus @default(SCHEDULED)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  clinic    Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  patient   Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+model Meeting {
+  id                 String            @id @default(cuid())
+  clinicId           String
+  clientId           String
+  parentAId          String?
+  parentBId          String?
+  startsAt           DateTime
+  type               MeetingType
+  status             AppointmentStatus @default(SCHEDULED)
+  tariff             Decimal           @db.Decimal(12, 2)
+  billingArrangement BillingArrangement
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  clinic             Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  client             Client            @relation("MeetingChild", fields: [clientId], references: [id], onDelete: Restrict)
+  parentA            Client?           @relation("MeetingParentA", fields: [parentAId], references: [id], onDelete: Restrict)
+  parentB            Client?           @relation("MeetingParentB", fields: [parentBId], references: [id], onDelete: Restrict)
+  invoices           Invoice[]
 
   @@index([clinicId, startsAt])
-  @@index([clinicId, patientId])
+  @@index([clinicId, clientId])
+  @@index([clinicId, type])
+}
+
+model Invoice {
+  id          String        @id @default(cuid())
+  clinicId    String
+  meetingId   String
+  issuedToId  String?
+  kind        InvoiceKind
+  amount      Decimal       @db.Decimal(12, 2)
+  status      InvoiceStatus @default(DRAFT)
+  issuedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  clinic      Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  meeting     Meeting       @relation(fields: [meetingId], references: [id], onDelete: Restrict)
+  issuedTo    Client?       @relation(fields: [issuedToId], references: [id], onDelete: Restrict)
+
+  @@unique([meetingId, kind])
+  @@index([clinicId, status])
 }
 
 model AuditLog {

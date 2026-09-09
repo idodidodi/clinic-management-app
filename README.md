@@ -6,7 +6,7 @@ A privacy-first clinic management application built with Next.js, TypeScript, an
 
 - No passwords, API keys, patient records, or real customer details in Git.
 - Use synthetic data for development and automated tests.
-- Scope every clinic-owned record with `clinicId`.
+- Use `Client` as the generic domain term; scope every clinic-owned record with `clinicId`.
 - Check clinic membership and role on the server before accessing tenant data.
 - Add audit logging for sensitive actions.
 
@@ -21,7 +21,7 @@ npm run db:migrate
 npm run dev
 ```
 
-The Prisma schema in `prisma/schema.prisma` uses one PostgreSQL database with shared tables and explicit clinic tenancy. A user can belong to multiple clinics through `ClinicMembership`, with a role per clinic.
+The Prisma schema in `prisma/schema.prisma` uses one PostgreSQL database with shared tables and explicit clinic tenancy. A user can belong to multiple clinics through `ClinicMembership`, with a role per clinic. Meeting type and billing arrangement belong to each `Meeting`, not to the `Client`, because one client can have different meeting types over time.
 
 ## CI
 
