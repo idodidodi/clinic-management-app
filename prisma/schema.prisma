@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MembershipRole {
+  OWNER
+  MANAGER
+  RECEPTIONIST
+  PRACTITIONER
+  ACCOUNTANT
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model User {
+  id           String             @id @default(cuid())
+  email        String             @unique
+  displayName  String
+  passwordHash String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  memberships  ClinicMembership[]
+  auditEvents  AuditLog[]
+}
+
+model Clinic {
+  id            String             @id @default(cuid())
+  name          String
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  memberships   ClinicMembership[]
+  patients      Patient[]
+  appointments  Appointment[]
+  auditEvents   AuditLog[]
+
+  @@index([name])
+}
+
+model ClinicMembership {
+  id        String         @id @default(cuid())
+  userId    String
+  clinicId  String
+  role      MembershipRole
+  createdAt DateTime       @default(now())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic    Clinic         @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clinicId])
+  @@index([clinicId])
+}
+
+model Patient {
+  id          String        @id @default(cuid())
+  clinicId    String
+  externalRef String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  clinic      Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@unique([clinicId, externalRef])
+  @@index([clinicId])
+}
+
+model Appointment {
+  id        String            @id @default(cuid())
+  clinicId  String
+  patientId String
+  startsAt  DateTime
+  status    AppointmentStatus @default(SCHEDULED)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  clinic    Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient   Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, startsAt])
+  @@index([clinicId, patientId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  clinicId   String
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  createdAt  DateTime @default(now())
+  clinic     Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([clinicId, createdAt])
+  @@index([userId, createdAt])
+}

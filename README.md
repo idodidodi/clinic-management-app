@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Clinic Management
 
-## Getting Started
+A privacy-first clinic management application built with Next.js, TypeScript, and PostgreSQL.
 
-First, run the development server:
+## Principles
+
+- No passwords, API keys, patient records, or real customer details in Git.
+- Use synthetic data for development and automated tests.
+- Scope every clinic-owned record with `clinicId`.
+- Check clinic membership and role on the server before accessing tenant data.
+- Add audit logging for sensitive actions.
+
+## Local setup
 
 ```bash
+npm install
+cp .env.example .env.local
+# Set DATABASE_URL in .env.local
+npm run db:generate
+npm run db:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The Prisma schema in `prisma/schema.prisma` uses one PostgreSQL database with shared tables and explicit clinic tenancy. A user can belong to multiple clinics through `ClinicMembership`, with a role per clinic.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## CI
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+GitHub Actions runs `npm ci`, linting, and a production build on pushes and pull requests targeting `main`. Database credentials are intentionally not required for these checks.
 
-## Learn More
+## Roadmap
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Add authentication and secure sessions.
+2. Add server-side `requireClinicMembership` and `requireRole` helpers.
+3. Add clinic invitations and staff management.
+4. Add appointments and audit-log screens.
+5. Add database-level row-level security before production use.
