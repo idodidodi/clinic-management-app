@@ -30,6 +30,17 @@ enum MeetingType {
   BOTH_PARENTS
 }
 
+enum ClientType {
+  CHILD
+  PARENT
+  BOTH_PARENTS
+}
+
+enum ContactMethod {
+  WHATSAPP
+  EMAIL
+}
+
 enum BillingArrangement {
   REGULAR
   SHARED_SINGLE_INVOICE
@@ -66,9 +77,12 @@ model Clinic {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   memberships   ClinicMembership[]
+  familyAccounts FamilyAccount[]
   clients       Client[]
   meetings      Meeting[]
   invoices      Invoice[]
+  payers        Payer[]
+  payments      Payment[]
   auditEvents   AuditLog[]
 
   @@index([name])
@@ -87,26 +101,63 @@ model ClinicMembership {
   @@index([clinicId])
 }
 
+model FamilyAccount {
+  id                String        @id @default(cuid())
+  clinicId          String
+  accountName       String
+  invoiceName       String
+  invoiceTitle      String?
+  invoiceDescription String?
+  comments          String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  clinic            Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  clients           Client[]
+  meetings          Meeting[]
+  invoices          Invoice[]
+  payers            Payer[]
+
+  @@index([clinicId, accountName])
+}
+
 model Client {
-  id             String          @id @default(cuid())
-  clinicId       String
-  externalRef    String
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  clinic         Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  childMeetings  Meeting[]       @relation("MeetingChild")
-  parentAMeetings Meeting[]      @relation("MeetingParentA")
-  parentBMeetings Meeting[]      @relation("MeetingParentB")
-  invoices       Invoice[]
+  id                String          @id @default(cuid())
+  clinicId          String
+  familyAccountId   String
+  externalRef       String
+  fullName          String
+  invoiceName       String?
+  clientType        ClientType
+  email             String?
+  phoneNumber       String?
+  preferredContact  ContactMethod?
+  comments          String?
+  parentAId         String?
+  parentBId         String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  clinic            Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  familyAccount     FamilyAccount   @relation(fields: [familyAccountId], references: [id], onDelete: Cascade)
+  parentA           Client?         @relation("ClientParentA", fields: [parentAId], references: [id], onDelete: SetNull)
+  parentB           Client?         @relation("ClientParentB", fields: [parentBId], references: [id], onDelete: SetNull)
+  childrenAsParentA Client[]        @relation("ClientParentA")
+  childrenAsParentB Client[]        @relation("ClientParentB")
+  subjectMeetings   Meeting[]       @relation("MeetingSubject")
+  parentAMeetings   Meeting[]       @relation("MeetingParentA")
+  parentBMeetings   Meeting[]       @relation("MeetingParentB")
+  invoices          Invoice[]       @relation("InvoiceRecipient")
+  payers            Payer[]
 
   @@unique([clinicId, externalRef])
-  @@index([clinicId])
+  @@index([clinicId, fullName])
+  @@index([familyAccountId])
 }
 
 model Meeting {
   id                 String            @id @default(cuid())
   clinicId           String
-  clientId           String
+  familyAccountId    String
+  subjectClientId    String
   parentAId          String?
   parentBId          String?
   startsAt           DateTime
@@ -117,32 +168,79 @@ model Meeting {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   clinic             Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  client             Client            @relation("MeetingChild", fields: [clientId], references: [id], onDelete: Restrict)
+  familyAccount      FamilyAccount     @relation(fields: [familyAccountId], references: [id], onDelete: Restrict)
+  subjectClient      Client            @relation("MeetingSubject", fields: [subjectClientId], references: [id], onDelete: Restrict)
   parentA            Client?           @relation("MeetingParentA", fields: [parentAId], references: [id], onDelete: Restrict)
   parentB            Client?           @relation("MeetingParentB", fields: [parentBId], references: [id], onDelete: Restrict)
   invoices           Invoice[]
+  payments           Payment[]
 
   @@index([clinicId, startsAt])
-  @@index([clinicId, clientId])
+  @@index([clinicId, subjectClientId])
+  @@index([familyAccountId, startsAt])
   @@index([clinicId, type])
 }
 
 model Invoice {
-  id          String        @id @default(cuid())
-  clinicId    String
-  meetingId   String
-  issuedToId  String?
-  kind        InvoiceKind
-  amount      Decimal       @db.Decimal(12, 2)
-  status      InvoiceStatus @default(DRAFT)
-  issuedAt    DateTime?
-  createdAt   DateTime      @default(now())
-  clinic      Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  meeting     Meeting       @relation(fields: [meetingId], references: [id], onDelete: Restrict)
-  issuedTo    Client?       @relation(fields: [issuedToId], references: [id], onDelete: Restrict)
+  id                String        @id @default(cuid())
+  clinicId          String
+  familyAccountId   String
+  meetingId         String
+  recipientClientId String?
+  kind              InvoiceKind
+  amount            Decimal       @db.Decimal(12, 2)
+  status            InvoiceStatus @default(DRAFT)
+  issuedAt          DateTime?
+  createdAt         DateTime      @default(now())
+  clinic            Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  familyAccount     FamilyAccount @relation(fields: [familyAccountId], references: [id], onDelete: Restrict)
+  meeting           Meeting       @relation(fields: [meetingId], references: [id], onDelete: Restrict)
+  recipientClient   Client?       @relation("InvoiceRecipient", fields: [recipientClientId], references: [id], onDelete: Restrict)
+  payments          Payment[]
 
   @@unique([meetingId, kind])
   @@index([clinicId, status])
+  @@index([familyAccountId, createdAt])
+}
+
+model Payer {
+  id             String        @id @default(cuid())
+  clinicId       String
+  familyAccountId String
+  clientId       String?
+  fullName       String
+  email          String?
+  phoneNumber    String?
+  comments       String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  clinic         Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  familyAccount  FamilyAccount @relation(fields: [familyAccountId], references: [id], onDelete: Cascade)
+  client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  payments       Payment[]
+
+  @@index([clinicId, fullName])
+  @@index([familyAccountId])
+}
+
+model Payment {
+  id                 String   @id @default(cuid())
+  clinicId           String
+  meetingId          String
+  invoiceId          String?
+  payerId            String?
+  payerNameSnapshot  String?
+  paidAt             DateTime
+  amount             Decimal  @db.Decimal(12, 2)
+  comments           String?
+  createdAt          DateTime @default(now())
+  clinic             Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  meeting            Meeting  @relation(fields: [meetingId], references: [id], onDelete: Restrict)
+  invoice            Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  payer              Payer?   @relation(fields: [payerId], references: [id], onDelete: SetNull)
+
+  @@index([clinicId, paidAt])
+  @@index([meetingId, paidAt])
 }
 
 model AuditLog {
