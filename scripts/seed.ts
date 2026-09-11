@@ -325,6 +325,177 @@ async function main() {
     }
   }
 
+  for (let familyNumber = 1; familyNumber <= 10; familyNumber += 1) {
+    const family = await upsertFamily({
+      id: `seed-family-regular-${familyNumber}`,
+      clinicId: clinic.id,
+      accountName: `Regular family ${familyNumber}`,
+      invoiceName: `Regular Family ${familyNumber}`,
+    });
+    const parentA = await upsertClient({
+      id: `seed-client-regular-${familyNumber}-parent-a`,
+      clinicId: clinic.id,
+      familyAccountId: family.id,
+      externalRef: `SEED-REGULAR-${familyNumber}-PARENT-A`,
+      fullName: `Parent A ${familyNumber}`,
+      invoiceName: family.invoiceName,
+      clientType: "PARENT",
+      email: `regular.parent.a.${familyNumber}@example.test`,
+      preferredContact: "EMAIL",
+    });
+    const parentB = await upsertClient({
+      id: `seed-client-regular-${familyNumber}-parent-b`,
+      clinicId: clinic.id,
+      familyAccountId: family.id,
+      externalRef: `SEED-REGULAR-${familyNumber}-PARENT-B`,
+      fullName: `Parent B ${familyNumber}`,
+      invoiceName: family.invoiceName,
+      clientType: "PARENT",
+      email: `regular.parent.b.${familyNumber}@example.test`,
+      preferredContact: "WHATSAPP",
+    });
+    const bothParents = await upsertClient({
+      id: `seed-client-regular-${familyNumber}-both-parents`,
+      clinicId: clinic.id,
+      familyAccountId: family.id,
+      externalRef: `SEED-REGULAR-${familyNumber}-BOTH`,
+      fullName: `Parents ${familyNumber}`,
+      invoiceName: family.invoiceName,
+      clientType: "BOTH_PARENTS",
+      preferredContact: "EMAIL",
+    });
+
+    for (let childNumber = 1; childNumber <= 6; childNumber += 1) {
+      const child = await upsertClient({
+        id: `seed-client-regular-${familyNumber}-child-${childNumber}`,
+        clinicId: clinic.id,
+        familyAccountId: family.id,
+        externalRef: `SEED-REGULAR-${familyNumber}-CHILD-${childNumber}`,
+        fullName: `Child ${familyNumber}-${childNumber}`,
+        invoiceName: family.invoiceName,
+        clientType: "CHILD",
+        preferredContact: "EMAIL",
+      });
+      await prisma.client.update({
+        where: { id: child.id },
+        data: { parentAId: parentA.id, parentBId: parentB.id },
+      });
+      await createSeedMeeting({
+        id: `seed-meeting-regular-${familyNumber}-child-${childNumber}`,
+        clinicId: clinic.id,
+        familyAccountId: family.id,
+        subjectClientId: child.id,
+        parentAId: parentA.id,
+        parentBId: parentB.id,
+        type: "CHILD",
+        billingArrangement: "REGULAR",
+        tariff: "100.00",
+        recipientClientId: parentA.id,
+      });
+    }
+
+    await createSeedMeeting({
+      id: `seed-meeting-regular-${familyNumber}-both-1`,
+      clinicId: clinic.id,
+      familyAccountId: family.id,
+      subjectClientId: bothParents.id,
+      parentAId: parentA.id,
+      parentBId: parentB.id,
+      type: "BOTH_PARENTS",
+      billingArrangement: "REGULAR",
+      tariff: "150.00",
+      recipientClientId: parentA.id,
+    });
+    await createSeedMeeting({
+      id: `seed-meeting-regular-${familyNumber}-both-2`,
+      clinicId: clinic.id,
+      familyAccountId: family.id,
+      subjectClientId: bothParents.id,
+      parentAId: parentA.id,
+      parentBId: parentB.id,
+      type: "BOTH_PARENTS",
+      billingArrangement: "REGULAR",
+      tariff: "150.00",
+      recipientClientId: parentA.id,
+    });
+    await createSeedMeeting({
+      id: `seed-meeting-regular-${familyNumber}-parent-a`,
+      clinicId: clinic.id,
+      familyAccountId: family.id,
+      subjectClientId: parentA.id,
+      parentAId: parentA.id,
+      type: "PARENT_A",
+      billingArrangement: "REGULAR",
+      tariff: "90.00",
+      recipientClientId: parentA.id,
+    });
+    await createSeedMeeting({
+      id: `seed-meeting-regular-${familyNumber}-parent-b`,
+      clinicId: clinic.id,
+      familyAccountId: family.id,
+      subjectClientId: parentB.id,
+      parentBId: parentB.id,
+      type: "PARENT_B",
+      billingArrangement: "REGULAR",
+      tariff: "90.00",
+      recipientClientId: parentB.id,
+    });
+  }
+
+  const motherChildFamily = await upsertFamily({
+    id: "seed-family-mother-child",
+    clinicId: clinic.id,
+    accountName: "Mother and child family",
+    invoiceName: "Mother and Child Family",
+  });
+  const mother = await upsertClient({
+    id: "seed-client-mother-child-mother",
+    clinicId: clinic.id,
+    familyAccountId: motherChildFamily.id,
+    externalRef: "SEED-MOTHER-CHILD-MOTHER",
+    fullName: "Mother Example",
+    invoiceName: motherChildFamily.invoiceName,
+    clientType: "PARENT",
+    email: "mother.example@example.test",
+    preferredContact: "WHATSAPP",
+  });
+  const onlyChild = await upsertClient({
+    id: "seed-client-mother-child-child",
+    clinicId: clinic.id,
+    familyAccountId: motherChildFamily.id,
+    externalRef: "SEED-MOTHER-CHILD-CHILD",
+    fullName: "Child Example",
+    invoiceName: motherChildFamily.invoiceName,
+    clientType: "CHILD",
+    preferredContact: "EMAIL",
+  });
+  await prisma.client.update({
+    where: { id: onlyChild.id },
+    data: { parentAId: mother.id },
+  });
+  await createSeedMeeting({
+    id: "seed-meeting-mother-child",
+    clinicId: clinic.id,
+    familyAccountId: motherChildFamily.id,
+    subjectClientId: onlyChild.id,
+    parentAId: mother.id,
+    type: "CHILD",
+    billingArrangement: "REGULAR",
+    tariff: "100.00",
+    recipientClientId: mother.id,
+  });
+
+  await createSplitFamily(
+    clinic.id,
+    "shared-single",
+    "SHARED_SINGLE_INVOICE",
+  );
+  await createSplitFamily(
+    clinic.id,
+    "shared-separate",
+    "SHARED_SEPARATE_INVOICES",
+  );
+
   console.log(`Seeded synthetic data for ${clinic.name}.`);
 }
 
@@ -344,6 +515,139 @@ async function upsertClient(data: {
     where: { id: data.id },
     update: {},
     create: data,
+  });
+}
+
+async function upsertFamily(data: {
+  id: string;
+  clinicId: string;
+  accountName: string;
+  invoiceName: string;
+}) {
+  return prisma.familyAccount.upsert({
+    where: { id: data.id },
+    update: {},
+    create: {
+      ...data,
+      invoiceTitle: "Professional services",
+      invoiceDescription: "Synthetic development invoice",
+      comments: "Seed data only.",
+    },
+  });
+}
+
+async function createSeedMeeting(data: {
+  id: string;
+  clinicId: string;
+  familyAccountId: string;
+  subjectClientId: string;
+  parentAId?: string;
+  parentBId?: string;
+  type: "CHILD" | "PARENT_A" | "PARENT_B" | "BOTH_PARENTS";
+  billingArrangement:
+    | "REGULAR"
+    | "SHARED_SINGLE_INVOICE"
+    | "SHARED_SEPARATE_INVOICES";
+  tariff: string;
+  recipientClientId: string;
+  invoiceKinds?: ("SINGLE" | "PARENT_A_SHARE" | "PARENT_B_SHARE")[];
+}) {
+  const meeting = await prisma.meeting.upsert({
+    where: { id: data.id },
+    update: {},
+    create: {
+      id: data.id,
+      clinicId: data.clinicId,
+      familyAccountId: data.familyAccountId,
+      subjectClientId: data.subjectClientId,
+      parentAId: data.parentAId,
+      parentBId: data.parentBId,
+      startsAt: new Date("2026-09-11T10:00:00.000Z"),
+      type: data.type,
+      status: "COMPLETED",
+      tariff: data.tariff,
+      billingArrangement: data.billingArrangement,
+    },
+  });
+
+  for (const kind of data.invoiceKinds ?? ["SINGLE"]) {
+    await prisma.invoice.upsert({
+      where: { meetingId_kind: { meetingId: meeting.id, kind } },
+      update: {},
+      create: {
+        clinicId: data.clinicId,
+        familyAccountId: data.familyAccountId,
+        meetingId: meeting.id,
+        recipientClientId: data.recipientClientId,
+        kind,
+        amount: kind === "SINGLE" ? data.tariff : "50.00",
+        status: "ISSUED",
+        issuedAt: new Date("2026-09-11T12:00:00.000Z"),
+      },
+    });
+  }
+}
+
+async function createSplitFamily(
+  clinicId: string,
+  key: string,
+  billingArrangement: "SHARED_SINGLE_INVOICE" | "SHARED_SEPARATE_INVOICES",
+) {
+  const family = await upsertFamily({
+    id: `seed-family-${key}`,
+    clinicId,
+    accountName: `${key} billing family`,
+    invoiceName: `${key} Billing Family`,
+  });
+  const parentA = await upsertClient({
+    id: `seed-client-${key}-parent-a`,
+    clinicId,
+    familyAccountId: family.id,
+    externalRef: `SEED-${key.toUpperCase()}-PARENT-A`,
+    fullName: `${key} Parent A`,
+    invoiceName: family.invoiceName,
+    clientType: "PARENT",
+    preferredContact: "EMAIL",
+  });
+  const parentB = await upsertClient({
+    id: `seed-client-${key}-parent-b`,
+    clinicId,
+    familyAccountId: family.id,
+    externalRef: `SEED-${key.toUpperCase()}-PARENT-B`,
+    fullName: `${key} Parent B`,
+    invoiceName: family.invoiceName,
+    clientType: "PARENT",
+    preferredContact: "WHATSAPP",
+  });
+  const child = await upsertClient({
+    id: `seed-client-${key}-child`,
+    clinicId,
+    familyAccountId: family.id,
+    externalRef: `SEED-${key.toUpperCase()}-CHILD`,
+    fullName: `${key} Child`,
+    invoiceName: family.invoiceName,
+    clientType: "CHILD",
+    preferredContact: "EMAIL",
+  });
+  await prisma.client.update({
+    where: { id: child.id },
+    data: { parentAId: parentA.id, parentBId: parentB.id },
+  });
+  await createSeedMeeting({
+    id: `seed-meeting-${key}-child`,
+    clinicId,
+    familyAccountId: family.id,
+    subjectClientId: child.id,
+    parentAId: parentA.id,
+    parentBId: parentB.id,
+    type: "CHILD",
+    billingArrangement,
+    tariff: "100.00",
+    recipientClientId: parentA.id,
+    invoiceKinds:
+      billingArrangement === "SHARED_SINGLE_INVOICE"
+        ? ["SINGLE"]
+        : ["PARENT_A_SHARE", "PARENT_B_SHARE"],
   });
 }
 
