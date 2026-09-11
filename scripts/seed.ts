@@ -547,6 +547,31 @@ async function main() {
     "SHARED_SEPARATE_INVOICES",
   );
 
+  const relatedClients = await prisma.client.findMany({
+    where: { clinicId: clinic.id },
+    select: { id: true, parentAId: true, parentBId: true, clientType: true },
+  });
+  for (const client of relatedClients) {
+    for (const parentId of [client.parentAId, client.parentBId]) {
+      if (!parentId) continue;
+      await prisma.clientRelation.createMany({
+        data: [
+          {
+            clientId: parentId,
+            relatedClientId: client.id,
+            relationType: client.clientType === "CHILD" ? "CHILD" : "OTHER",
+          },
+          {
+            clientId: client.id,
+            relatedClientId: parentId,
+            relationType: "PARENT",
+          },
+        ],
+        skipDuplicates: true,
+      });
+    }
+  }
+
   console.log(`Seeded synthetic data for ${clinic.name}.`);
 }
 
@@ -557,7 +582,7 @@ async function upsertClient(data: {
   externalRef: string;
   fullName: string;
   invoiceName: string;
-  clientType: "CHILD" | "PARENT" | "BOTH_PARENTS";
+  clientType: "CHILD" | "PARENT" | "OTHER" | "BOTH_PARENTS";
   parentRole?: "MOM" | "DAD" | "OTHER";
   email?: string;
   phoneNumber?: string;

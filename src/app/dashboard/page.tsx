@@ -20,6 +20,8 @@ export default async function DashboardPage() {
           familyAccount: { select: { accountName: true } },
           parentA: { select: { id: true, fullName: true, parentRole: true } },
           parentB: { select: { id: true, fullName: true, parentRole: true } },
+          relationsFrom: { include: { relatedClient: { select: { id: true, fullName: true, clientType: true, parentRole: true } } } },
+          relationsTo: { include: { client: { select: { id: true, fullName: true, clientType: true, parentRole: true } } } },
         },
         orderBy: { fullName: "asc" },
       }),
@@ -46,6 +48,8 @@ export default async function DashboardPage() {
         familyAccount: client.familyAccount,
         parentA: client.parentA,
         parentB: client.parentB,
+        relationsFrom: client.relationsFrom,
+        relationsTo: client.relationsTo,
       }))}
       families={families.map((family) => ({ id: family.id, accountName: family.accountName }))}
       meetings={meetings.map((meeting) => ({

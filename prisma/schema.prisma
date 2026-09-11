@@ -40,12 +40,19 @@ enum MeetingType {
 enum ClientType {
   CHILD
   PARENT
+  OTHER
   BOTH_PARENTS
 }
 
 enum ParentRole {
   MOM
   DAD
+  OTHER
+}
+
+enum ClientRelationType {
+  PARENT
+  CHILD
   OTHER
 }
 
@@ -170,10 +177,25 @@ model Client {
   invoices          Invoice[]       @relation("InvoiceRecipient")
   payers            Payer[]
   meetingParticipants MeetingParticipant[]
+  relationsFrom     ClientRelation[] @relation("ClientRelationsFrom")
+  relationsTo       ClientRelation[] @relation("ClientRelationsTo")
 
   @@unique([clinicId, externalRef])
   @@index([clinicId, fullName])
   @@index([familyAccountId])
+}
+
+model ClientRelation {
+  id              String             @id @default(cuid())
+  clientId        String
+  relatedClientId String
+  relationType    ClientRelationType
+  client          Client             @relation("ClientRelationsFrom", fields: [clientId], references: [id], onDelete: Cascade)
+  relatedClient   Client             @relation("ClientRelationsTo", fields: [relatedClientId], references: [id], onDelete: Cascade)
+  createdAt       DateTime           @default(now())
+
+  @@unique([clientId, relatedClientId])
+  @@index([relatedClientId])
 }
 
 model Meeting {

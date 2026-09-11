@@ -15,16 +15,41 @@ const clinicId = async () => {
 export async function createClient(formData: FormData) {
   const id = String(formData.get("id") || crypto.randomUUID());
   const currentClinicId = await clinicId();
-  await prisma.client.create({
-    data: {
+  const parentClientId = String(formData.get("parentClientId") || "") || null;
+  const clientType = String(formData.get("clientType")) as "CHILD" | "PARENT" | "OTHER" | "BOTH_PARENTS";
+  const parentRole = String(formData.get("parentRole") || "") as "MOM" | "DAD" | "OTHER";
+  const fullName = String(formData.get("fullName"));
+  const invoiceName = String(formData.get("invoiceName") || fullName);
+  await prisma.$transaction(async (tx) => {
+    let familyAccountId = parentClientId
+      ? (await tx.client.findFirstOrThrow({ where: { id: parentClientId, clinicId: currentClinicId } })).familyAccountId
+      : "";
+    if (!parentClientId) {
+      if (clientType !== "PARENT") throw new Error("Start a family by creating a parent client.");
+      const family = await tx.familyAccount.create({
+        data: {
+          clinicId: currentClinicId,
+          accountName: `${fullName} family`,
+          invoiceName,
+          parentOneRole: parentRole === "DAD" ? "DAD" : "MOM",
+          parentTwoRole: parentRole === "DAD" ? "MOM" : "DAD",
+        },
+      });
+      familyAccountId = family.id;
+    } else if (clientType === "PARENT") {
+      const parentCount = await tx.client.count({ where: { familyAccountId, clientType: "PARENT" } });
+      if (parentCount >= 2) throw new Error("A family can have at most two parent clients.");
+    }
+    const client = await tx.client.create({
+      data: {
       id,
       clinicId: currentClinicId,
-      familyAccountId: String(formData.get("familyAccountId")),
+      familyAccountId,
       externalRef: String(formData.get("externalRef") || id.slice(0, 8)),
-      fullName: String(formData.get("fullName")),
-      invoiceName: String(formData.get("invoiceName") || ""),
-      clientType: String(formData.get("clientType")) as "CHILD" | "PARENT" | "BOTH_PARENTS",
-      parentRole: String(formData.get("parentRole") || "") as "MOM" | "DAD" | "OTHER" || null,
+      fullName,
+      invoiceName,
+      clientType,
+      parentRole: clientType === "PARENT" ? parentRole : null,
       email: String(formData.get("email") || "") || null,
       phoneNumber: String(formData.get("phoneNumber") || "") || null,
       preferredContact: (String(formData.get("preferredContact") || "") || null) as
@@ -32,47 +57,18 @@ export async function createClient(formData: FormData) {
         | "EMAIL"
         | null,
       comments: String(formData.get("comments") || "") || null,
-    },
-  });
-  revalidatePath("/dashboard");
-}
-
-export async function createFamily(formData: FormData) {
-  const currentClinicId = await clinicId();
-  const accountName = String(formData.get("accountName"));
-  const invoiceName = String(formData.get("invoiceName"));
-  const parentOneRole = String(formData.get("parentOneRole")) as "MOM" | "DAD";
-  const parentTwoRole = String(formData.get("parentTwoRole")) as "MOM" | "DAD";
-  const familyId = crypto.randomUUID();
-  await prisma.familyAccount.create({
-    data: {
-      id: familyId,
-      clinicId: currentClinicId,
-      accountName,
-      invoiceName,
-      parentOneRole,
-      parentTwoRole,
-      clients: {
-        create: [
-          {
-            clinicId: currentClinicId,
-            externalRef: `${familyId}-parent-1`,
-            fullName: `${accountName} ${parentOneRole === "MOM" ? "Mom" : "Dad"} 1`,
-            invoiceName,
-            clientType: "PARENT",
-            parentRole: parentOneRole,
-          },
-          {
-            clinicId: currentClinicId,
-            externalRef: `${familyId}-parent-2`,
-            fullName: `${accountName} ${parentTwoRole === "MOM" ? "Mom" : "Dad"} 2`,
-            invoiceName,
-            clientType: "PARENT",
-            parentRole: parentTwoRole,
-          },
-        ],
       },
-    },
+    });
+    if (parentClientId) {
+      const relationType = clientType === "CHILD" ? "PARENT" : clientType === "PARENT" ? "PARENT" : "OTHER";
+      await tx.clientRelation.createMany({
+        data: [
+          { clientId: parentClientId, relatedClientId: client.id, relationType: clientType === "CHILD" ? "CHILD" : "OTHER" },
+          { clientId: client.id, relatedClientId: parentClientId, relationType },
+        ],
+      });
+    }
+    return client;
   });
   revalidatePath("/dashboard");
 }
@@ -93,15 +89,17 @@ export async function updateClient(formData: FormData) {
 export async function createMeeting(formData: FormData) {
   const currentClinicId = await clinicId();
   const id = crypto.randomUUID();
-  const familyAccountId = String(formData.get("familyAccountId"));
+  const clientId = String(formData.get("clientId"));
   const type = String(formData.get("type")) as
     | "CHILD"
     | "PARENT_A"
     | "PARENT_B"
     | "BOTH_PARENTS";
-  const familyClients = await prisma.client.findMany({
-    where: { familyAccountId, clinicId: currentClinicId },
+  const selectedClient = await prisma.client.findFirstOrThrow({
+    where: { id: clientId, clinicId: currentClinicId },
   });
+  const familyAccountId = selectedClient.familyAccountId;
+  const familyClients = await prisma.client.findMany({ where: { familyAccountId, clinicId: currentClinicId } });
   const child = familyClients.find((client) => client.clientType === "CHILD");
   const parents = familyClients.filter((client) => client.clientType === "PARENT");
   const mom = parents.find((client) => client.parentRole === "MOM");
