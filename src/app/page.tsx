@@ -1,4 +1,5 @@
 import styles from "./page.module.css";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -20,8 +21,12 @@ export default function Home() {
             workflows that keep care moving.
           </p>
           <div className={styles.actions}>
-            <button className={styles.primary}>Open dashboard</button>
-            <button className={styles.secondary}>View setup guide</button>
+            <Link className={styles.primary} href="/setup">
+              Register clinic locally
+            </Link>
+            <Link className={styles.secondary} href="/setup">
+              View setup guide
+            </Link>
           </div>
         </section>
         <section className={styles.cards} aria-label="Workspace overview">
