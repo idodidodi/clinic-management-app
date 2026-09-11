@@ -191,17 +191,42 @@ export async function deleteClient(formData: FormData) {
   const client = await prisma.client.findFirstOrThrow({
     where: { id, clinicId: currentClinicId },
   });
-  await prisma.$transaction([
-    prisma.clientAudit.create({
+  const [subjectMeetingCount, participantCount] = await Promise.all([
+    prisma.meeting.count({ where: { subjectClientId: client.id, clinicId: currentClinicId } }),
+    prisma.meetingParticipant.count({ where: { clientId: client.id } }),
+  ]);
+  if (subjectMeetingCount > 0 || participantCount > 0) {
+    throw new Error(
+      "This client cannot be deleted because they are attached to meeting history. Remove or reassign those meetings first.",
+    );
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.clientAudit.create({
       data: {
         clinicId: currentClinicId,
         clientId: client.id,
         action: "DELETED",
         snapshot: client,
       },
-    }),
-    prisma.client.delete({ where: { id: client.id } }),
-  ]);
+    });
+    await tx.meeting.updateMany({
+      where: { clinicId: currentClinicId, parentAId: client.id },
+      data: { parentAId: null },
+    });
+    await tx.meeting.updateMany({
+      where: { clinicId: currentClinicId, parentBId: client.id },
+      data: { parentBId: null },
+    });
+    await tx.invoice.updateMany({
+      where: { clinicId: currentClinicId, recipientClientId: client.id },
+      data: { recipientClientId: null },
+    });
+    await tx.payer.updateMany({
+      where: { clinicId: currentClinicId, clientId: client.id },
+      data: { clientId: null },
+    });
+    await tx.client.delete({ where: { id: client.id } });
+  });
   revalidatePath("/dashboard");
 }
 
