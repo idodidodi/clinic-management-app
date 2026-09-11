@@ -43,6 +43,11 @@ enum ClientType {
   BOTH_PARENTS
 }
 
+enum ParentRole {
+  MOM
+  DAD
+}
+
 enum ContactMethod {
   WHATSAPP
   EMAIL
@@ -122,6 +127,8 @@ model FamilyAccount {
   invoiceTitle      String?
   invoiceDescription String?
   comments          String?
+  parentOneRole     ParentRole    @default(MOM)
+  parentTwoRole     ParentRole    @default(DAD)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   clinic            Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
@@ -141,6 +148,7 @@ model Client {
   fullName          String
   invoiceName       String?
   clientType        ClientType
+  parentRole        ParentRole?
   email             String?
   phoneNumber       String?
   preferredContact  ContactMethod?
@@ -160,6 +168,7 @@ model Client {
   parentBMeetings   Meeting[]       @relation("MeetingParentB")
   invoices          Invoice[]       @relation("InvoiceRecipient")
   payers            Payer[]
+  meetingParticipants MeetingParticipant[]
 
   @@unique([clinicId, externalRef])
   @@index([clinicId, fullName])
@@ -189,11 +198,23 @@ model Meeting {
   invoices           Invoice[]
   payments           Payment[]
   auditRecords       MeetingAudit[]
+  participants       MeetingParticipant[]
 
   @@index([clinicId, startsAt])
   @@index([clinicId, subjectClientId])
   @@index([familyAccountId, startsAt])
   @@index([clinicId, type])
+}
+
+model MeetingParticipant {
+  id        String   @id @default(cuid())
+  meetingId String
+  clientId  String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@unique([meetingId, clientId])
+  @@index([clientId])
 }
 
 model Invoice {

@@ -18,15 +18,15 @@ export default async function DashboardPage() {
         where: { clinicId },
         include: {
           familyAccount: { select: { accountName: true } },
-          parentA: { select: { fullName: true } },
-          parentB: { select: { fullName: true } },
+          parentA: { select: { id: true, fullName: true, parentRole: true } },
+          parentB: { select: { id: true, fullName: true, parentRole: true } },
         },
         orderBy: { fullName: "asc" },
       }),
       prisma.familyAccount.findMany({ where: { clinicId }, orderBy: { accountName: "asc" } }),
       prisma.meeting.findMany({
         where: { clinicId },
-        include: { subjectClient: true, invoices: true },
+        include: { subjectClient: true, invoices: true, participants: { include: { client: true } } },
         orderBy: { startsAt: "desc" },
       }),
       prisma.payment.findMany({
@@ -55,6 +55,7 @@ export default async function DashboardPage() {
           ...invoice,
           amount: invoice.amount.toString(),
         })),
+        participants: meeting.participants.map((participant) => participant.client),
       }))}
       payments={payments.map((payment) => ({
         ...payment,

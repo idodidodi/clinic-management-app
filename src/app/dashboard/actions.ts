@@ -36,6 +36,20 @@ export async function createClient(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+export async function createFamily(formData: FormData) {
+  const currentClinicId = await clinicId();
+  await prisma.familyAccount.create({
+    data: {
+      clinicId: currentClinicId,
+      accountName: String(formData.get("accountName")),
+      invoiceName: String(formData.get("invoiceName")),
+      parentOneRole: String(formData.get("parentOneRole")) as "MOM" | "DAD",
+      parentTwoRole: String(formData.get("parentTwoRole")) as "MOM" | "DAD",
+    },
+  });
+  revalidatePath("/dashboard");
+}
+
 export async function updateClient(formData: FormData) {
   const currentClinicId = await clinicId();
   await prisma.client.updateMany({
@@ -53,24 +67,42 @@ export async function createMeeting(formData: FormData) {
   const currentClinicId = await clinicId();
   const id = crypto.randomUUID();
   const familyAccountId = String(formData.get("familyAccountId"));
+  const type = String(formData.get("type")) as
+    | "CHILD"
+    | "PARENT_A"
+    | "PARENT_B"
+    | "BOTH_PARENTS";
+  const familyClients = await prisma.client.findMany({
+    where: { familyAccountId, clinicId: currentClinicId },
+  });
+  const child = familyClients.find((client) => client.clientType === "CHILD");
+  const parents = familyClients.filter((client) => client.clientType === "PARENT");
+  const participants =
+    type === "CHILD"
+      ? child ? [child] : []
+      : type === "PARENT_A"
+        ? parents.slice(0, 1)
+        : type === "PARENT_B"
+          ? parents.slice(1, 2)
+          : parents.slice(0, 2);
+  if (!participants.length || (type === "BOTH_PARENTS" && participants.length < 2)) {
+    throw new Error("The selected family does not have the clients required for this meeting type.");
+  }
   await prisma.meeting.create({
     data: {
       id,
       clinicId: currentClinicId,
       familyAccountId,
-      subjectClientId: String(formData.get("subjectClientId")),
+      subjectClientId: participants[0].id,
       parentAId: String(formData.get("parentAId") || "") || null,
       parentBId: String(formData.get("parentBId") || "") || null,
       startsAt: new Date(String(formData.get("startsAt"))),
-      type: String(formData.get("type")) as
-        | "CHILD"
-        | "PARENT_A"
-        | "PARENT_B"
-        | "BOTH_PARENTS",
+      type,
       status: "SCHEDULED",
       workflowStatus: "REGISTERED",
       tariff: String(formData.get("tariff")),
       billingArrangement: "REGULAR",
+      participants: { create: participants.map((client) => ({ clientId: client.id })) },
     },
   });
   revalidatePath("/dashboard");

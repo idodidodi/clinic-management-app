@@ -40,6 +40,14 @@
   .add-menu summary { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; color: #fff; background: #1f6f63; font-size: 22px; line-height: 1; cursor: pointer; list-style: none; }
   .add-menu summary::-webkit-details-marker { display: none; }
   .client-add-form { position: absolute; z-index: 3; top: 38px; left: 0; width: min(620px, 70vw); padding: 14px; border: 1px solid #cbded8; border-radius: 12px; background: #fff; box-shadow: 0 14px 32px rgb(24 49 47 / 14%); }
+  .add-panel { display: grid; gap: 10px; position: absolute; z-index: 3; top: 38px; left: 0; width: min(620px, 78vw); padding: 16px; border: 1px solid #cbded8; border-radius: 12px; background: #fff; box-shadow: 0 14px 32px rgb(24 49 47 / 14%); }
+  .add-panel h3 { color: #18312f; font-size: 14px; }
+  .compact-form { display: grid; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid #e5efeb; }
+  .compact-form input, .compact-form select { padding: 9px; border: 1px solid #cbded8; border-radius: 7px; font: inherit; }
+  .role-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .role-row label { display: grid; gap: 4px; color: #60736e; font-size: 12px; }
+  .client-link { color: #1f6f63; text-decoration: underline; text-underline-offset: 2px; }
+  .meeting-client { display: block; margin-bottom: 4px; text-decoration: none; }
   .table-help { margin: 0; color: #70837e; font-size: 14px; }
   .muted-cell { display: block; margin-top: 4px; color: #70837e; font-size: 12px; }
   .type-pill { display: inline-block; padding: 5px 8px; border-radius: 999px; color: #27675c; background: #e2f1eb; font-size: 12px; text-transform: capitalize; }
