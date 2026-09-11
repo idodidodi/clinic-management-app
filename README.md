@@ -24,14 +24,14 @@ npm run dev
 
 Open [http://localhost:3000/setup](http://localhost:3000/setup) to create a local clinic, owner, and clinic manager. Use synthetic local credentials only. The form stores only bcrypt password hashes; it never stores plaintext passwords.
 
-After registration, `npm run db:seed` adds repeatable synthetic family accounts, child and parent clients, all meeting types, all billing arrangements, invoices, a non-client grandparent payer, and payments. It requires the local setup records and does not add real people.
+After registration, `npm run db:seed` adds repeatable synthetic family accounts, named Demo child clients, Mom and Dad clients, all meeting types, all billing arrangements, invoices, a non-client payer, and payments. It requires the local setup records and does not add real people. New family accounts create one Mom and one Dad client automatically; additional clients may use the parent type `MOM`, `DAD`, or `OTHER`.
 
 The Prisma schema in `prisma/schema.prisma` uses one PostgreSQL database with shared tables and explicit clinic tenancy. A user can belong to multiple clinics through `ClinicMembership`, with a role per clinic. Meeting type and billing arrangement belong to each `Meeting`, not to the `Client`, because one client can have different meeting types over time.
 
 The current domain model separates:
 
 - `FamilyAccount`: the shared invoice identity for a family.
-- `Client`: a child or parent connected to that family account.
+- `Client`: a child or parent connected to that family account. Parent clients have a parent type of Mom, Dad, or Other.
 - `Payer`: an optional payer who may be a client, a relative, or another person.
 - `Payment`: money received against a meeting, optionally linked to an invoice.
 
@@ -45,7 +45,6 @@ GitHub Actions runs `npm ci`, linting, and a production build on pushes and pull
 
 1. Add authentication and secure sessions.
 2. Add server-side `requireClinicMembership` and `requireRole` helpers.
-3. Add client/family-account creation as a transaction.
-4. Add meeting, invoice, payment, and dashboard screens.
-5. Add Morning API integration behind an explicit feature boundary.
-6. Add database-level row-level security before production use.
+3. Add secure client and family-account editing workflows.
+4. Add Morning API integration behind an explicit feature boundary.
+5. Add database-level row-level security before production use.

@@ -46,6 +46,7 @@ enum ClientType {
 enum ParentRole {
   MOM
   DAD
+  OTHER
 }
 
 enum ContactMethod {

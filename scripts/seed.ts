@@ -29,12 +29,19 @@ async function main() {
 
   const familyOne = await prisma.familyAccount.upsert({
     where: { id: "seed-family-rivera" },
-    update: {},
+    update: {
+      accountName: "Demo Family One",
+      invoiceName: "Demo Family One",
+      parentOneRole: "MOM",
+      parentTwoRole: "DAD",
+    },
     create: {
       id: "seed-family-rivera",
       clinicId: clinic.id,
       accountName: "Rivera family",
-      invoiceName: "Rivera Family",
+      invoiceName: "Demo Family One",
+      parentOneRole: "MOM",
+      parentTwoRole: "DAD",
       invoiceTitle: "Professional services",
       invoiceDescription: "Synthetic development invoice",
       comments: "Seed data only.",
@@ -43,12 +50,19 @@ async function main() {
 
   const familyTwo = await prisma.familyAccount.upsert({
     where: { id: "seed-family-chen" },
-    update: {},
+    update: {
+      accountName: "Demo Family Two",
+      invoiceName: "Demo Family Two",
+      parentOneRole: "MOM",
+      parentTwoRole: "DAD",
+    },
     create: {
       id: "seed-family-chen",
       clinicId: clinic.id,
-      accountName: "Chen family",
-      invoiceName: "Chen Family",
+      accountName: "Demo Family Two",
+      invoiceName: "Demo Family Two",
+      parentOneRole: "MOM",
+      parentTwoRole: "DAD",
       invoiceTitle: "Professional services",
       invoiceDescription: "Synthetic development invoice",
       comments: "Seed data only.",
@@ -60,8 +74,8 @@ async function main() {
     clinicId: clinic.id,
     familyAccountId: familyOne.id,
     externalRef: "SEED-RIVERA-CHILD",
-    fullName: "Alex Rivera",
-    invoiceName: "Rivera Family",
+    fullName: "Demo Child One",
+    invoiceName: "Demo Family One",
     clientType: "CHILD",
     email: "alex.rivera@example.test",
     phoneNumber: "+1 555 0101",
@@ -72,9 +86,10 @@ async function main() {
     clinicId: clinic.id,
     familyAccountId: familyOne.id,
     externalRef: "SEED-RIVERA-PARENT-A",
-    fullName: "Morgan Rivera",
-    invoiceName: "Rivera Family",
+    fullName: "Demo Mom One",
+    invoiceName: "Demo Family One",
     clientType: "PARENT",
+    parentRole: "MOM",
     email: "morgan.rivera@example.test",
     phoneNumber: "+1 555 0102",
     preferredContact: "EMAIL",
@@ -84,9 +99,10 @@ async function main() {
     clinicId: clinic.id,
     familyAccountId: familyOne.id,
     externalRef: "SEED-RIVERA-PARENT-B",
-    fullName: "Taylor Rivera",
-    invoiceName: "Rivera Family",
+    fullName: "Demo Dad One",
+    invoiceName: "Demo Family One",
     clientType: "PARENT",
+    parentRole: "DAD",
     email: "taylor.rivera@example.test",
     phoneNumber: "+1 555 0103",
     preferredContact: "WHATSAPP",
@@ -96,8 +112,8 @@ async function main() {
     clinicId: clinic.id,
     familyAccountId: familyOne.id,
     externalRef: "SEED-RIVERA-BOTH",
-    fullName: "Morgan and Taylor Rivera",
-    invoiceName: "Rivera Family",
+    fullName: "Demo Parent Pair One",
+    invoiceName: "Demo Family One",
     clientType: "BOTH_PARENTS",
     preferredContact: "EMAIL",
   });
@@ -112,8 +128,8 @@ async function main() {
     clinicId: clinic.id,
     familyAccountId: familyTwo.id,
     externalRef: "SEED-CHEN-CHILD",
-    fullName: "Jamie Chen",
-    invoiceName: "Chen Family",
+    fullName: "Demo Child Two",
+    invoiceName: "Demo Family Two",
     clientType: "CHILD",
     email: "jamie.chen@example.test",
     phoneNumber: "+1 555 0201",
@@ -124,17 +140,30 @@ async function main() {
     clinicId: clinic.id,
     familyAccountId: familyTwo.id,
     externalRef: "SEED-CHEN-PARENT-A",
-    fullName: "Casey Chen",
-    invoiceName: "Chen Family",
+    fullName: "Demo Mom Two",
+    invoiceName: "Demo Family Two",
     clientType: "PARENT",
+    parentRole: "MOM",
     email: "casey.chen@example.test",
     phoneNumber: "+1 555 0202",
     preferredContact: "WHATSAPP",
   });
+  const parentBChen = await upsertClient({
+    id: "seed-client-chen-parent-b",
+    clinicId: clinic.id,
+    familyAccountId: familyTwo.id,
+    externalRef: "SEED-CHEN-PARENT-B",
+    fullName: "Demo Dad Two",
+    invoiceName: "Demo Family Two",
+    clientType: "PARENT",
+    parentRole: "DAD",
+    email: "demo.dad.two@example.test",
+    preferredContact: "EMAIL",
+  });
 
   await prisma.client.update({
     where: { id: childChen.id },
-    data: { parentAId: parentAChen.id },
+    data: { parentAId: parentAChen.id, parentBId: parentBChen.id },
   });
 
   const payerGrandparent = await prisma.payer.upsert({
@@ -144,7 +173,7 @@ async function main() {
       id: "seed-payer-grandparent",
       clinicId: clinic.id,
       familyAccountId: familyTwo.id,
-      fullName: "Jordan Chen",
+      fullName: "Demo Other Payer",
       email: "jordan.chen@example.test",
       phoneNumber: "+1 555 0203",
       comments: "Synthetic payer who is not a client.",
@@ -253,6 +282,14 @@ async function main() {
         billingArrangement: meetingData.billingArrangement,
       },
     });
+    const participantIds =
+      meetingData.type === "BOTH_PARENTS"
+        ? [meetingData.parentAId, meetingData.parentBId].filter((id): id is string => Boolean(id))
+        : [meetingData.subjectClientId];
+    await prisma.meetingParticipant.createMany({
+      data: participantIds.map((clientId) => ({ meetingId: meeting.id, clientId })),
+      skipDuplicates: true,
+    });
 
     const recipientClientId =
       meetingData.type === "PARENT_A"
@@ -329,17 +366,18 @@ async function main() {
     const family = await upsertFamily({
       id: `seed-family-regular-${familyNumber}`,
       clinicId: clinic.id,
-      accountName: `Regular family ${familyNumber}`,
-      invoiceName: `Regular Family ${familyNumber}`,
+      accountName: `Demo Family ${familyNumber + 2}`,
+      invoiceName: `Demo Family ${familyNumber + 2}`,
     });
     const parentA = await upsertClient({
       id: `seed-client-regular-${familyNumber}-parent-a`,
       clinicId: clinic.id,
       familyAccountId: family.id,
       externalRef: `SEED-REGULAR-${familyNumber}-PARENT-A`,
-      fullName: `Parent A ${familyNumber}`,
+      fullName: `Demo Mom ${familyNumber + 2}`,
       invoiceName: family.invoiceName,
       clientType: "PARENT",
+      parentRole: "MOM",
       email: `regular.parent.a.${familyNumber}@example.test`,
       preferredContact: "EMAIL",
     });
@@ -348,9 +386,10 @@ async function main() {
       clinicId: clinic.id,
       familyAccountId: family.id,
       externalRef: `SEED-REGULAR-${familyNumber}-PARENT-B`,
-      fullName: `Parent B ${familyNumber}`,
+      fullName: `Demo Dad ${familyNumber + 2}`,
       invoiceName: family.invoiceName,
       clientType: "PARENT",
+      parentRole: "DAD",
       email: `regular.parent.b.${familyNumber}@example.test`,
       preferredContact: "WHATSAPP",
     });
@@ -359,7 +398,7 @@ async function main() {
       clinicId: clinic.id,
       familyAccountId: family.id,
       externalRef: `SEED-REGULAR-${familyNumber}-BOTH`,
-      fullName: `Parents ${familyNumber}`,
+      fullName: `Demo Parent Pair ${familyNumber + 2}`,
       invoiceName: family.invoiceName,
       clientType: "BOTH_PARENTS",
       preferredContact: "EMAIL",
@@ -371,7 +410,7 @@ async function main() {
         clinicId: clinic.id,
         familyAccountId: family.id,
         externalRef: `SEED-REGULAR-${familyNumber}-CHILD-${childNumber}`,
-        fullName: `Child ${familyNumber}-${childNumber}`,
+        fullName: `Demo Child ${familyNumber + 2}-${childNumber}`,
         invoiceName: family.invoiceName,
         clientType: "CHILD",
         preferredContact: "EMAIL",
@@ -445,17 +484,18 @@ async function main() {
   const motherChildFamily = await upsertFamily({
     id: "seed-family-mother-child",
     clinicId: clinic.id,
-    accountName: "Mother and child family",
-    invoiceName: "Mother and Child Family",
+    accountName: "Demo Family Single Parent",
+    invoiceName: "Demo Family Single Parent",
   });
   const mother = await upsertClient({
     id: "seed-client-mother-child-mother",
     clinicId: clinic.id,
     familyAccountId: motherChildFamily.id,
     externalRef: "SEED-MOTHER-CHILD-MOTHER",
-    fullName: "Mother Example",
+    fullName: "Demo Mom Single Parent",
     invoiceName: motherChildFamily.invoiceName,
     clientType: "PARENT",
+    parentRole: "MOM",
     email: "mother.example@example.test",
     preferredContact: "WHATSAPP",
   });
@@ -464,14 +504,25 @@ async function main() {
     clinicId: clinic.id,
     familyAccountId: motherChildFamily.id,
     externalRef: "SEED-MOTHER-CHILD-CHILD",
-    fullName: "Child Example",
+    fullName: "Demo Child Single Parent",
     invoiceName: motherChildFamily.invoiceName,
     clientType: "CHILD",
     preferredContact: "EMAIL",
   });
+  const father = await upsertClient({
+    id: "seed-client-mother-child-father",
+    clinicId: clinic.id,
+    familyAccountId: motherChildFamily.id,
+    externalRef: "SEED-MOTHER-CHILD-FATHER",
+    fullName: "Demo Dad Single Parent",
+    invoiceName: motherChildFamily.invoiceName,
+    clientType: "PARENT",
+    parentRole: "DAD",
+    preferredContact: "EMAIL",
+  });
   await prisma.client.update({
     where: { id: onlyChild.id },
-    data: { parentAId: mother.id },
+    data: { parentAId: mother.id, parentBId: father.id },
   });
   await createSeedMeeting({
     id: "seed-meeting-mother-child",
@@ -507,13 +558,19 @@ async function upsertClient(data: {
   fullName: string;
   invoiceName: string;
   clientType: "CHILD" | "PARENT" | "BOTH_PARENTS";
+  parentRole?: "MOM" | "DAD" | "OTHER";
   email?: string;
   phoneNumber?: string;
   preferredContact?: "WHATSAPP" | "EMAIL";
 }) {
   return prisma.client.upsert({
     where: { id: data.id },
-    update: {},
+    update: {
+      fullName: data.fullName,
+      invoiceName: data.invoiceName,
+      clientType: data.clientType,
+      parentRole: data.parentRole,
+    },
     create: data,
   });
 }
@@ -526,7 +583,12 @@ async function upsertFamily(data: {
 }) {
   return prisma.familyAccount.upsert({
     where: { id: data.id },
-    update: {},
+    update: {
+      accountName: data.accountName,
+      invoiceName: data.invoiceName,
+      parentOneRole: "MOM",
+      parentTwoRole: "DAD",
+    },
     create: {
       ...data,
       invoiceTitle: "Professional services",
@@ -569,6 +631,14 @@ async function createSeedMeeting(data: {
       billingArrangement: data.billingArrangement,
     },
   });
+  const participantIds =
+    data.type === "BOTH_PARENTS"
+      ? [data.parentAId, data.parentBId].filter((id): id is string => Boolean(id))
+      : [data.subjectClientId];
+  await prisma.meetingParticipant.createMany({
+    data: participantIds.map((clientId) => ({ meetingId: meeting.id, clientId })),
+    skipDuplicates: true,
+  });
 
   for (const kind of data.invoiceKinds ?? ["SINGLE"]) {
     await prisma.invoice.upsert({
@@ -596,17 +666,18 @@ async function createSplitFamily(
   const family = await upsertFamily({
     id: `seed-family-${key}`,
     clinicId,
-    accountName: `${key} billing family`,
-    invoiceName: `${key} Billing Family`,
+    accountName: `Demo Family ${key === "shared-single" ? "Shared Single" : "Shared Separate"}`,
+    invoiceName: `Demo Family ${key === "shared-single" ? "Shared Single" : "Shared Separate"}`,
   });
   const parentA = await upsertClient({
     id: `seed-client-${key}-parent-a`,
     clinicId,
     familyAccountId: family.id,
     externalRef: `SEED-${key.toUpperCase()}-PARENT-A`,
-    fullName: `${key} Parent A`,
+    fullName: `Demo Mom ${key === "shared-single" ? "Shared Single" : "Shared Separate"}`,
     invoiceName: family.invoiceName,
     clientType: "PARENT",
+    parentRole: "MOM",
     preferredContact: "EMAIL",
   });
   const parentB = await upsertClient({
@@ -614,9 +685,10 @@ async function createSplitFamily(
     clinicId,
     familyAccountId: family.id,
     externalRef: `SEED-${key.toUpperCase()}-PARENT-B`,
-    fullName: `${key} Parent B`,
+    fullName: `Demo Dad ${key === "shared-single" ? "Shared Single" : "Shared Separate"}`,
     invoiceName: family.invoiceName,
     clientType: "PARENT",
+    parentRole: "DAD",
     preferredContact: "WHATSAPP",
   });
   const child = await upsertClient({

@@ -24,6 +24,7 @@ export async function createClient(formData: FormData) {
       fullName: String(formData.get("fullName")),
       invoiceName: String(formData.get("invoiceName") || ""),
       clientType: String(formData.get("clientType")) as "CHILD" | "PARENT" | "BOTH_PARENTS",
+      parentRole: String(formData.get("parentRole") || "") as "MOM" | "DAD" | "OTHER" || null,
       email: String(formData.get("email") || "") || null,
       phoneNumber: String(formData.get("phoneNumber") || "") || null,
       preferredContact: (String(formData.get("preferredContact") || "") || null) as
@@ -38,13 +39,39 @@ export async function createClient(formData: FormData) {
 
 export async function createFamily(formData: FormData) {
   const currentClinicId = await clinicId();
+  const accountName = String(formData.get("accountName"));
+  const invoiceName = String(formData.get("invoiceName"));
+  const parentOneRole = String(formData.get("parentOneRole")) as "MOM" | "DAD";
+  const parentTwoRole = String(formData.get("parentTwoRole")) as "MOM" | "DAD";
+  const familyId = crypto.randomUUID();
   await prisma.familyAccount.create({
     data: {
+      id: familyId,
       clinicId: currentClinicId,
-      accountName: String(formData.get("accountName")),
-      invoiceName: String(formData.get("invoiceName")),
-      parentOneRole: String(formData.get("parentOneRole")) as "MOM" | "DAD",
-      parentTwoRole: String(formData.get("parentTwoRole")) as "MOM" | "DAD",
+      accountName,
+      invoiceName,
+      parentOneRole,
+      parentTwoRole,
+      clients: {
+        create: [
+          {
+            clinicId: currentClinicId,
+            externalRef: `${familyId}-parent-1`,
+            fullName: `${accountName} ${parentOneRole === "MOM" ? "Mom" : "Dad"} 1`,
+            invoiceName,
+            clientType: "PARENT",
+            parentRole: parentOneRole,
+          },
+          {
+            clinicId: currentClinicId,
+            externalRef: `${familyId}-parent-2`,
+            fullName: `${accountName} ${parentTwoRole === "MOM" ? "Mom" : "Dad"} 2`,
+            invoiceName,
+            clientType: "PARENT",
+            parentRole: parentTwoRole,
+          },
+        ],
+      },
     },
   });
   revalidatePath("/dashboard");
@@ -77,14 +104,16 @@ export async function createMeeting(formData: FormData) {
   });
   const child = familyClients.find((client) => client.clientType === "CHILD");
   const parents = familyClients.filter((client) => client.clientType === "PARENT");
+  const mom = parents.find((client) => client.parentRole === "MOM");
+  const dad = parents.find((client) => client.parentRole === "DAD");
   const participants =
     type === "CHILD"
       ? child ? [child] : []
       : type === "PARENT_A"
-        ? parents.slice(0, 1)
+        ? mom ? [mom] : []
         : type === "PARENT_B"
-          ? parents.slice(1, 2)
-          : parents.slice(0, 2);
+          ? dad ? [dad] : []
+          : [mom, dad].filter((client): client is NonNullable<typeof client> => Boolean(client));
   if (!participants.length || (type === "BOTH_PARENTS" && participants.length < 2)) {
     throw new Error("The selected family does not have the clients required for this meeting type.");
   }
