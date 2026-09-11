@@ -21,11 +21,11 @@ export default function Home() {
             workflows that keep care moving.
           </p>
           <div className={styles.actions}>
-            <Link className={styles.primary} href="/setup">
-              Register clinic locally
+            <Link className={styles.primary} href="/dashboard">
+              Open manager dashboard
             </Link>
             <Link className={styles.secondary} href="/setup">
-              View setup guide
+              Register clinic locally
             </Link>
           </div>
         </section>
