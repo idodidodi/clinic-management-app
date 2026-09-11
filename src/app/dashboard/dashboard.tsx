@@ -30,10 +30,9 @@ export default function Dashboard({
   const [paymentFilter, setPaymentFilter] = useState("");
   const [dueFilter, setDueFilter] = useState("");
   const due = useMemo(() => meetings.map((meeting) => {
-    const billed = meeting.invoices.reduce((sum, invoice) => sum + Number(invoice.amount), 0);
     const paid = payments.filter((payment) => payment.meeting.id === meeting.id)
       .reduce((sum, payment) => sum + Number(payment.amount), 0);
-    return { meeting, due: Math.max(0, billed - paid) };
+    return { meeting, due: Math.max(0, Number(meeting.tariff) - paid) };
   }).filter((row) => row.due > 0), [meetings, payments]);
   const filteredClients = clients.filter((client) => client.fullName.toLowerCase().includes(clientFilter.toLowerCase()));
   const filteredPayments = payments.filter((payment) => payment.meeting.subjectClient.fullName.toLowerCase().includes(paymentFilter.toLowerCase()));
