@@ -31,9 +31,9 @@ export default function Home() {
         </section>
         <section className={styles.cards} aria-label="Workspace overview">
           <article className={styles.card}>
-            <span className={styles.cardLabel}>Today</span>
-            <strong className={styles.cardValue}>Ready to configure</strong>
-            <p>Connect a local PostgreSQL database to begin.</p>
+            <span className={styles.cardLabel}>Database</span>
+            <strong className={styles.cardValue}>Connected locally</strong>
+            <p>PostgreSQL is running and the initial schema is applied.</p>
           </article>
           <article className={styles.card}>
             <span className={styles.cardLabel}>Tenant model</span>
