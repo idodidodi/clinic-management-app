@@ -34,13 +34,13 @@
   .dashboard-card > strong { display: block; margin: 10px 0 4px; font-size: 34px; }
   .dashboard-card > span { color: #70837e; font-size: 14px; }
   .dashboard-card h2 { margin-bottom: 18px; font-size: 24px; }
-  .heading-with-action { display: flex; align-items: center; gap: 10px; }
+  .heading-with-action { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
   .heading-with-action h2 { margin-bottom: 0; }
-  .add-menu { position: relative; }
+  .add-menu { position: relative; flex: 0 0 auto; }
   .add-menu summary { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; color: #fff; background: #1f6f63; font-size: 22px; line-height: 1; cursor: pointer; list-style: none; }
   .add-menu summary::-webkit-details-marker { display: none; }
   .client-add-form { position: absolute; z-index: 3; top: 38px; left: 0; width: min(620px, 70vw); padding: 14px; border: 1px solid #cbded8; border-radius: 12px; background: #fff; box-shadow: 0 14px 32px rgb(24 49 47 / 14%); }
-  .table-help { margin-top: -10px; color: #70837e; font-size: 14px; }
+  .table-help { margin: 0; color: #70837e; font-size: 14px; }
   .muted-cell { display: block; margin-top: 4px; color: #70837e; font-size: 12px; }
   .type-pill { display: inline-block; padding: 5px 8px; border-radius: 999px; color: #27675c; background: #e2f1eb; font-size: 12px; text-transform: capitalize; }
   .parent-list { color: #526d67; font-size: 13px; line-height: 1.6; }
@@ -61,6 +61,9 @@
   .edit-form input, .edit-form select { padding: 8px; border: 1px solid #cbded8; border-radius: 6px; font: inherit; }
   .dashboard-empty { padding: 48px; }
   @media (max-width: 800px) {
+    .section-heading { align-items: stretch; flex-direction: column; }
+    .section-heading > input { width: 100%; }
+    .client-add-form { width: min(620px, calc(100vw - 80px)); }
     .dashboard-grid { grid-template-columns: 1fr; }
     .dashboard-card-wide { grid-column: span 1; }
     .dashboard-card { overflow-x: auto; }
