@@ -14,7 +14,15 @@ export default async function DashboardPage() {
   const [clinic, clients, families, meetings, payments, invoices, payers] =
     await Promise.all([
       prisma.clinic.findUniqueOrThrow({ where: { id: clinicId } }),
-      prisma.client.findMany({ where: { clinicId }, orderBy: { fullName: "asc" } }),
+      prisma.client.findMany({
+        where: { clinicId },
+        include: {
+          familyAccount: { select: { accountName: true } },
+          parentA: { select: { fullName: true } },
+          parentB: { select: { fullName: true } },
+        },
+        orderBy: { fullName: "asc" },
+      }),
       prisma.familyAccount.findMany({ where: { clinicId }, orderBy: { accountName: "asc" } }),
       prisma.meeting.findMany({
         where: { clinicId },
@@ -33,7 +41,12 @@ export default async function DashboardPage() {
   return (
     <Dashboard
       clinicName={clinic.name}
-      clients={clients.map((client) => ({ ...client }))}
+      clients={clients.map((client) => ({
+        ...client,
+        familyAccount: client.familyAccount,
+        parentA: client.parentA,
+        parentB: client.parentB,
+      }))}
       families={families.map((family) => ({ id: family.id, accountName: family.accountName }))}
       meetings={meetings.map((meeting) => ({
         ...meeting,
