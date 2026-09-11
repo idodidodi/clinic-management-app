@@ -18,10 +18,13 @@ cp .env.example .env.local
 # Set DATABASE_URL in .env.local
 npm run db:generate
 npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
 Open [http://localhost:3000/setup](http://localhost:3000/setup) to create a local clinic, owner, and clinic manager. Use synthetic local credentials only. The form stores only bcrypt password hashes; it never stores plaintext passwords.
+
+After registration, `npm run db:seed` adds repeatable synthetic family accounts, child and parent clients, all meeting types, all billing arrangements, invoices, a non-client grandparent payer, and payments. It requires the local setup records and does not add real people.
 
 The Prisma schema in `prisma/schema.prisma` uses one PostgreSQL database with shared tables and explicit clinic tenancy. A user can belong to multiple clinics through `ClinicMembership`, with a role per clinic. Meeting type and billing arrangement belong to each `Meeting`, not to the `Client`, because one client can have different meeting types over time.
 
