@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import Link from "next/link";
 import { createClient, createMeeting, createPayment, deleteClient, deleteMeeting, deletePayment, updateClient, updateClinicTariff, updateMeeting, updatePayment, updateUserSettings } from "./actions";
 
@@ -84,7 +85,7 @@ export default function Dashboard({
     <main className="dashboard-shell">
       <header className="dashboard-header">
         <div><p className="kicker">Manager workspace</p><h1>{clinicName}</h1></div>
-        <div className="dashboard-header-actions"><Link href="/" className="dashboard-home">Home</Link><details className="settings-menu"><summary aria-label="Clinic settings">⚙</summary><div className="settings-panel"><p className="kicker">Clinic settings</p><h2>Default tariff</h2><TariffForm defaultTariff={defaultTariff} /></div></details></div>
+        <div className="dashboard-header-actions"><Link href="/" className="dashboard-home">Home</Link><ClinicSettingsMenu defaultTariff={defaultTariff} /></div>
       </header>
       <nav className="dashboard-nav" aria-label="Dashboard sections">
         {["overview", "clients", "meetings", "payments", "due"].map((item) => (
@@ -131,8 +132,44 @@ function MeetingForm({ clients }: { clients: Client[] }) {
   return <form className="inline-form" action={createMeeting}><select name="type" value={type} onChange={(event) => setType(event.target.value)} required><option value="">Meeting type</option><option value="CHILD">Child meeting</option><option value="PARENT_A">Mom meeting</option><option value="PARENT_B">Dad meeting</option><option value="BOTH_PARENTS">Mom + Dad meeting</option></select><select name="clientId" required><option value="">Client</option>{eligible.map((client) => <option key={client.id} value={client.id}>{client.fullName}</option>)}</select><input name="startsAt" type="date" defaultValue={new Date().toISOString().slice(0, 10)} /><button className="primary-button">Add meeting</button></form>;
 }
 
-function TariffForm({ defaultTariff }: { defaultTariff: string }) {
-  return <form className="inline-form" action={updateClinicTariff}><label>Default tariff<input name="defaultTariff" type="number" min="0" step="0.01" defaultValue={defaultTariff} required /></label><button className="primary-button">Save tariff</button></form>;
+function ClinicSettingsMenu({ defaultTariff }: { defaultTariff: string }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(defaultTariff);
+  const [savedValue, setSavedValue] = useState(defaultTariff);
+  const [notice, setNotice] = useState("");
+  const menuRef = useRef<HTMLDivElement>(null);
+  const dirty = value !== savedValue;
+
+  useEffect(() => {
+    if (!open) return;
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        if (dirty) {
+          setNotice("Unsaved tariff changes were discarded.");
+          window.setTimeout(() => setNotice(""), 3000);
+        }
+        setValue(savedValue);
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [dirty, open, savedValue]);
+
+  const save = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    await updateClinicTariff(formData);
+    setSavedValue(value);
+    setNotice("");
+    setOpen(false);
+  };
+
+  return <div className="settings-menu" ref={menuRef}>
+    <button type="button" className="settings-trigger" aria-label="Clinic settings" onClick={() => setOpen((current) => !current)}>⚙</button>
+    {open && <div className="settings-panel"><p className="kicker">Clinic settings</p><h2>Default tariff</h2>{dirty && <p className="unsaved-indicator">Unsaved changes</p>}<form className="inline-form" onSubmit={save}><label>Default tariff<input name="defaultTariff" type="number" min="0" step="0.01" value={value} onChange={(event) => setValue(event.target.value)} required /></label><button className="primary-button">Save tariff</button></form></div>}
+    {notice && <div className="settings-notice" role="status">{notice}</div>}
+  </div>;
 }
 
 function DateFormatForm({ dateFormat }: { dateFormat: string }) {
