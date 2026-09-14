@@ -136,7 +136,6 @@ function ClinicSettingsMenu({ defaultTariff }: { defaultTariff: string }) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(defaultTariff);
   const [savedValue, setSavedValue] = useState(defaultTariff);
-  const [notice, setNotice] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
   const dirty = value !== savedValue;
 
@@ -144,11 +143,6 @@ function ClinicSettingsMenu({ defaultTariff }: { defaultTariff: string }) {
     if (!open) return;
     const handleOutsideClick = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        if (dirty) {
-          setNotice("Unsaved tariff changes were discarded.");
-          window.setTimeout(() => setNotice(""), 3000);
-        }
-        setValue(savedValue);
         setOpen(false);
       }
     };
@@ -161,14 +155,17 @@ function ClinicSettingsMenu({ defaultTariff }: { defaultTariff: string }) {
     const formData = new FormData(event.currentTarget);
     await updateClinicTariff(formData);
     setSavedValue(value);
-    setNotice("");
+    setOpen(false);
+  };
+
+  const cancel = () => {
+    setValue(savedValue);
     setOpen(false);
   };
 
   return <div className="settings-menu" ref={menuRef}>
     <button type="button" className="settings-trigger" aria-label="Clinic settings" onClick={() => setOpen((current) => !current)}>⚙</button>
-    {open && <div className="settings-panel"><p className="kicker">Clinic settings</p><h2>Default tariff</h2><form className="inline-form" onSubmit={save}><label>Default tariff<input className="settings-tariff-input" name="defaultTariff" type="number" min="0" step="0.01" value={value} onChange={(event) => setValue(event.target.value)} required />{dirty && <span className="unsaved-indicator">Unsaved changes</span>}</label><button className="primary-button">Save tariff</button></form></div>}
-    {notice && <div className="settings-notice" role="status">{notice}</div>}
+    {open && <div className="settings-panel"><p className="kicker">Clinic settings</p><h2>Default tariff</h2><form className="inline-form" onSubmit={save}><label>Default tariff<input className="settings-tariff-input" name="defaultTariff" type="number" min="0" step="0.01" value={value} onChange={(event) => setValue(event.target.value)} required />{dirty && <span className="unsaved-indicator">Unsaved changes</span>}</label><button className="primary-button">Save tariff</button>{dirty && <button type="button" className="secondary-button" onClick={cancel}>Cancel</button>}</form></div>}
   </div>;
 }
 

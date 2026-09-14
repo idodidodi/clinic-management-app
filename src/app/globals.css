@@ -34,7 +34,6 @@
   .settings-tariff-input { appearance: textfield; -moz-appearance: textfield; }
   .settings-panel .inline-form label { position: relative; }
   .unsaved-indicator { position: absolute; top: calc(100% + 4px); left: 0; color: #a35d20; font-size: 13px; font-weight: 700; white-space: nowrap; }
-  .settings-notice { position: fixed; z-index: 10; top: 24px; right: 24px; max-width: min(340px, calc(100vw - 48px)); padding: 12px 16px; border: 1px solid #e8c58f; border-radius: 9px; color: #704316; background: #fff7e8; box-shadow: 0 8px 20px rgb(24 49 47 / 12%); font-size: 13px; }
   .dashboard-nav { justify-content: flex-start; margin: 38px 0 24px; overflow-x: auto; }
   .dashboard-nav button, .section-heading button { padding: 9px 13px; border: 0; border-radius: 8px; color: #60736e; background: transparent; font: inherit; cursor: pointer; }
   .dashboard-nav .nav-active { color: #fff; background: #1f6f63; }
@@ -73,6 +72,7 @@
   .inline-form label { display: grid; gap: 8px; color: #18312f; }
   .inline-form input, .inline-form select { flex: 1 1 140px; }
   .primary-button { padding: 10px 14px; border: 0; border-radius: 8px; color: #fff; background: #1f6f63; font-weight: 700; cursor: pointer; }
+  .secondary-button { padding: 10px 14px; border: 1px solid #cbded8; border-radius: 8px; color: #1f6f63; background: #fff; font-weight: 700; cursor: pointer; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { padding: 13px 10px; border-bottom: 1px solid #e5efeb; text-align: left; vertical-align: middle; }
   th { color: #60736e; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
