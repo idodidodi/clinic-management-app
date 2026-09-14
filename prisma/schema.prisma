@@ -110,8 +110,20 @@ model Clinic {
   clientAudits  ClientAudit[]
   meetingAudits MeetingAudit[]
   paymentAudits PaymentAudit[]
+  defaultTariff   Decimal          @default(100) @db.Decimal(12, 2)
+  tariffOverrides ClinicTariff[]
 
   @@index([name])
+}
+
+model ClinicTariff {
+  id         String      @id @default(cuid())
+  clinicId   String
+  meetingType MeetingType
+  tariff     Decimal     @db.Decimal(12, 2)
+  clinic     Clinic      @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, meetingType])
 }
 
 model ClinicMembership {
@@ -179,10 +191,21 @@ model Client {
   meetingParticipants MeetingParticipant[]
   relationsFrom     ClientRelation[] @relation("ClientRelationsFrom")
   relationsTo       ClientRelation[] @relation("ClientRelationsTo")
+  tariffs            ClientTariff[]
 
   @@unique([clinicId, externalRef])
   @@index([clinicId, fullName])
   @@index([familyAccountId])
+}
+
+model ClientTariff {
+  id          String      @id @default(cuid())
+  clientId    String
+  meetingType MeetingType
+  tariff      Decimal     @db.Decimal(12, 2)
+  client      Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, meetingType])
 }
 
 model ClientRelation {

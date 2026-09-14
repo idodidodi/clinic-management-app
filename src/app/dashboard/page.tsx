@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   const clinicId = owner?.memberships[0]?.clinicId;
   if (!clinicId) return <p className="dashboard-empty">Complete setup first.</p>;
 
-  const [clinic, clients, families, meetings, payments, invoices, payers] =
+  const [clinic, clients, families, meetings, payments, invoices, payers, clinicTariffs] =
     await Promise.all([
       prisma.clinic.findUniqueOrThrow({ where: { id: clinicId } }),
       prisma.client.findMany({
@@ -20,6 +20,7 @@ export default async function DashboardPage() {
           familyAccount: { select: { accountName: true } },
           parentA: { select: { id: true, fullName: true, parentRole: true } },
           parentB: { select: { id: true, fullName: true, parentRole: true } },
+          tariffs: true,
           relationsFrom: { include: { relatedClient: { select: { id: true, fullName: true, clientType: true, parentRole: true } } } },
           relationsTo: { include: { client: { select: { id: true, fullName: true, clientType: true, parentRole: true } } } },
         },
@@ -38,6 +39,7 @@ export default async function DashboardPage() {
       }),
       prisma.invoice.findMany({ where: { clinicId } }),
       prisma.payer.findMany({ where: { clinicId }, orderBy: { fullName: "asc" } }),
+      prisma.clinicTariff.findMany({ where: { clinicId } }),
     ]);
 
   return (
@@ -50,6 +52,7 @@ export default async function DashboardPage() {
         parentB: client.parentB,
         relationsFrom: client.relationsFrom,
         relationsTo: client.relationsTo,
+        tariffs: client.tariffs.map((tariff) => ({ meetingType: tariff.meetingType, tariff: tariff.tariff.toString() })),
       }))}
       families={families.map((family) => ({ id: family.id, accountName: family.accountName }))}
       meetings={meetings.map((meeting) => ({
@@ -74,6 +77,8 @@ export default async function DashboardPage() {
       }))}
       invoices={invoices.map((invoice) => ({ ...invoice, amount: invoice.amount.toString() }))}
       payers={payers}
+      defaultTariff={clinic.defaultTariff.toString()}
+      clinicTariffs={clinicTariffs.map((tariff) => ({ meetingType: tariff.meetingType, tariff: tariff.tariff.toString() }))}
     />
   );
 }

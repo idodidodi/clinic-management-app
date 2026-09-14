@@ -55,6 +55,9 @@
   .section-heading { margin-bottom: 20px; }
   .filter-row { display: flex; gap: 10px; align-items: center; }
   .filter-row select { min-width: 130px; padding: 10px 11px; border: 1px solid #cbded8; border-radius: 8px; color: #18312f; background: #fbfdfc; font: inherit; }
+  .tariff-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; }
+  .tariff-inputs label { display: grid; gap: 4px; color: #60736e; font-size: 12px; }
+  .tariff-inputs input { width: 100%; }
   .section-heading input, .inline-form input, .inline-form select { min-width: 0; padding: 10px 11px; border: 1px solid #cbded8; border-radius: 8px; color: #18312f; background: #fbfdfc; font: inherit; }
   .inline-form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
   .inline-form input, .inline-form select { flex: 1 1 140px; }

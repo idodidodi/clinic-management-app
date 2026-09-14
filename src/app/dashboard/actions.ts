@@ -21,6 +21,7 @@ export async function createClient(formData: FormData) {
   const fullName = String(formData.get("fullName"));
   const invoiceName = String(formData.get("invoiceName") || fullName);
   await prisma.$transaction(async (tx) => {
+    const clinic = await tx.clinic.findUniqueOrThrow({ where: { id: currentClinicId }, include: { tariffOverrides: true } });
     let familyAccountId = parentClientId
       ? (await tx.client.findFirstOrThrow({ where: { id: parentClientId, clinicId: currentClinicId } })).familyAccountId
       : "";
@@ -59,6 +60,16 @@ export async function createClient(formData: FormData) {
       comments: String(formData.get("comments") || "") || null,
       },
     });
+    const meetingTypes = ["CHILD", "PARENT_A", "PARENT_B", "BOTH_PARENTS"] as const;
+    await tx.clientTariff.createMany({
+      data: meetingTypes.map((meetingType) => ({
+        clientId: client.id,
+        meetingType,
+        tariff: String(formData.get(`tariff-${meetingType}`) || "")
+          || clinic.tariffOverrides.find((item) => item.meetingType === meetingType)?.tariff
+          || clinic.defaultTariff,
+      })),
+    });
     if (parentClientId) {
       const relationType = clientType === "CHILD" ? "PARENT" : clientType === "PARENT" ? "PARENT" : "OTHER";
       await tx.clientRelation.createMany({
@@ -75,14 +86,24 @@ export async function createClient(formData: FormData) {
 
 export async function updateClient(formData: FormData) {
   const currentClinicId = await clinicId();
-  await prisma.client.updateMany({
-    where: { id: String(formData.get("id")), clinicId: currentClinicId },
-    data: {
-      fullName: String(formData.get("fullName")),
-      email: String(formData.get("email") || "") || null,
-      phoneNumber: String(formData.get("phoneNumber") || "") || null,
-    },
-  });
+  const id = String(formData.get("id"));
+  await prisma.$transaction([
+    prisma.client.updateMany({
+      where: { id, clinicId: currentClinicId },
+      data: {
+        fullName: String(formData.get("fullName")),
+        email: String(formData.get("email") || "") || null,
+        phoneNumber: String(formData.get("phoneNumber") || "") || null,
+      },
+    }),
+    ...(["CHILD", "PARENT_A", "PARENT_B", "BOTH_PARENTS"] as const)
+      .filter((meetingType) => String(formData.get(`tariff-${meetingType}`) || ""))
+      .map((meetingType) => prisma.clientTariff.upsert({
+        where: { clientId_meetingType: { clientId: id, meetingType } },
+        update: { tariff: String(formData.get(`tariff-${meetingType}`)) },
+        create: { clientId: id, meetingType, tariff: String(formData.get(`tariff-${meetingType}`)) },
+      })),
+  ]);
   revalidatePath("/dashboard");
 }
 
@@ -97,24 +118,28 @@ export async function createMeeting(formData: FormData) {
     | "BOTH_PARENTS";
   const selectedClient = await prisma.client.findFirstOrThrow({
     where: { id: clientId, clinicId: currentClinicId },
+    include: { tariffs: true },
   });
+  const clinic = await prisma.clinic.findUniqueOrThrow({ where: { id: currentClinicId }, include: { tariffOverrides: true } });
   const familyAccountId = selectedClient.familyAccountId;
   const familyClients = await prisma.client.findMany({ where: { familyAccountId, clinicId: currentClinicId } });
-  const child = familyClients.find((client) => client.clientType === "CHILD");
   const parents = familyClients.filter((client) => client.clientType === "PARENT");
   const mom = parents.find((client) => client.parentRole === "MOM");
   const dad = parents.find((client) => client.parentRole === "DAD");
   const participants =
     type === "CHILD"
-      ? child ? [child] : []
+      ? selectedClient.clientType === "CHILD" ? [selectedClient] : []
       : type === "PARENT_A"
-        ? mom ? [mom] : []
+        ? selectedClient.parentRole === "MOM" ? [selectedClient] : []
         : type === "PARENT_B"
-          ? dad ? [dad] : []
+          ? selectedClient.parentRole === "DAD" ? [selectedClient] : []
           : [mom, dad].filter((client): client is NonNullable<typeof client> => Boolean(client));
   if (!participants.length || (type === "BOTH_PARENTS" && participants.length < 2)) {
     throw new Error("The selected family does not have the clients required for this meeting type.");
   }
+  const tariff = selectedClient.tariffs.find((item) => item.meetingType === type)?.tariff
+    ?? clinic.tariffOverrides.find((item) => item.meetingType === type)?.tariff
+    ?? clinic.defaultTariff;
   await prisma.meeting.create({
     data: {
       id,
@@ -127,11 +152,28 @@ export async function createMeeting(formData: FormData) {
       type,
       status: "SCHEDULED",
       workflowStatus: "REGISTERED",
-      tariff: String(formData.get("tariff")),
+      tariff,
       billingArrangement: "REGULAR",
       participants: { create: participants.map((client) => ({ clientId: client.id })) },
     },
   });
+  revalidatePath("/dashboard");
+}
+
+export async function updateClinicTariffs(formData: FormData) {
+  const currentClinicId = await clinicId();
+  const defaultTariff = String(formData.get("defaultTariff"));
+  await prisma.clinic.update({ where: { id: currentClinicId }, data: { defaultTariff } });
+  for (const meetingType of ["CHILD", "PARENT_A", "PARENT_B", "BOTH_PARENTS"] as const) {
+    const value = String(formData.get(`tariff-${meetingType}`) || "");
+    if (value) {
+      await prisma.clinicTariff.upsert({
+        where: { clinicId_meetingType: { clinicId: currentClinicId, meetingType } },
+        update: { tariff: value },
+        create: { clinicId: currentClinicId, meetingType, tariff: value },
+      });
+    }
+  }
   revalidatePath("/dashboard");
 }
 
