@@ -56,6 +56,7 @@
   .role-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .role-row label { display: grid; gap: 4px; color: #60736e; font-size: 12px; }
   .client-link { color: #1f6f63; text-decoration: underline; text-underline-offset: 2px; }
+  .client-link-button { padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
   .meeting-client { display: block; margin-bottom: 4px; text-decoration: none; }
   .table-help { margin: 0; color: #70837e; font-size: 14px; }
   .muted-cell { display: block; margin-top: 4px; color: #70837e; font-size: 12px; }
