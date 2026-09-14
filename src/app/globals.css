@@ -99,6 +99,7 @@
   .client-field strong { overflow-wrap: anywhere; font-weight: 500; }
   .copy-button { flex: 0 0 auto; padding: 5px 8px; border: 1px solid #cbded8; border-radius: 6px; color: #1f6f63; background: #fff; cursor: pointer; }
   .client-modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+  .show-more-button { margin-top: 14px; }
   .delete-confirmation { margin-top: 16px; padding: 12px; border: 1px solid #f0c4bd; border-radius: 8px; color: #7b3731; background: #fff7f5; }
   .delete-confirmation p { margin: 0 0 10px; }
   .delete-confirmation form { display: flex; gap: 8px; }
