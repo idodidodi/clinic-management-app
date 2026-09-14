@@ -168,6 +168,7 @@ export async function createMeeting(formData: FormData) {
       parentBId: String(formData.get("parentBId") || "") || null,
       startsAt: new Date(String(formData.get("startsAt"))),
       type,
+      invoiceMeetingName: String(formData.get("invoiceMeetingName") || "") || null,
       status: "SCHEDULED",
       workflowStatus: "REGISTERED",
       tariff,
@@ -191,6 +192,7 @@ export async function updateMeeting(formData: FormData) {
     where: { id: String(formData.get("id")), clinicId: currentClinicId },
     data: {
       startsAt: new Date(String(formData.get("startsAt"))),
+      invoiceMeetingName: String(formData.get("invoiceMeetingName") || "") || null,
       tariff: String(formData.get("tariff")),
       workflowStatus: String(formData.get("workflowStatus")) as
         | "REGISTERED"

@@ -226,6 +226,7 @@ model Meeting {
   parentBId          String?
   startsAt           DateTime
   type               MeetingType
+  invoiceMeetingName String?
   status             AppointmentStatus @default(SCHEDULED)
   workflowStatus     MeetingWorkflowStatus @default(REGISTERED)
   tariff             Decimal           @db.Decimal(12, 2)
@@ -267,6 +268,7 @@ model Invoice {
   recipientClientId String?
   kind              InvoiceKind
   amount            Decimal       @db.Decimal(12, 2)
+  description       String?
   status            InvoiceStatus @default(DRAFT)
   issuedAt          DateTime?
   createdAt         DateTime      @default(now())
