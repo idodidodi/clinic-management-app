@@ -620,6 +620,7 @@ async function upsertClient(data: {
   externalRef: string;
   fullName: string;
   invoiceName: string;
+  invoiceMeetingName?: string;
   clientType: "CHILD" | "PARENT" | "OTHER" | "BOTH_PARENTS";
   parentRole?: "MOM" | "DAD" | "OTHER";
   email?: string;
@@ -631,10 +632,11 @@ async function upsertClient(data: {
     update: {
       fullName: data.fullName,
       invoiceName: data.invoiceName,
+      invoiceMeetingName: data.invoiceMeetingName,
       clientType: data.clientType,
       parentRole: data.parentRole,
     },
-    create: data,
+    create: { ...data, invoiceMeetingName: data.invoiceMeetingName || (data.clientType === "CHILD" ? "Art therapy" : "Professional guidance") },
   });
 }
 

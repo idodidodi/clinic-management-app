@@ -163,6 +163,7 @@ model Client {
   externalRef       String
   fullName          String
   invoiceName       String?
+  invoiceMeetingName String?
   clientType        ClientType
   parentRole        ParentRole?
   email             String?

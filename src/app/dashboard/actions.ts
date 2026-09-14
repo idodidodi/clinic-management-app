@@ -63,6 +63,7 @@ export async function createClient(formData: FormData) {
       externalRef: String(formData.get("externalRef") || id.slice(0, 8)),
       fullName,
       invoiceName,
+      invoiceMeetingName: String(formData.get("invoiceMeetingName") || "") || null,
       clientType,
       parentRole: clientType === "PARENT" ? parentRole : null,
       email: String(formData.get("email") || "") || null,
@@ -106,6 +107,7 @@ export async function updateClient(formData: FormData) {
       data: {
         fullName: String(formData.get("fullName")),
         invoiceName: String(formData.get("invoiceName") || "") || null,
+        invoiceMeetingName: String(formData.get("invoiceMeetingName") || "") || null,
         email: String(formData.get("email") || "") || null,
         phoneNumber: String(formData.get("phoneNumber") || "") || null,
         preferredContact: (String(formData.get("preferredContact") || "") || null) as
@@ -168,7 +170,7 @@ export async function createMeeting(formData: FormData) {
       parentBId: String(formData.get("parentBId") || "") || null,
       startsAt: new Date(String(formData.get("startsAt"))),
       type,
-      invoiceMeetingName: String(formData.get("invoiceMeetingName") || "") || null,
+      invoiceMeetingName: selectedClient.invoiceMeetingName,
       status: "SCHEDULED",
       workflowStatus: "REGISTERED",
       tariff,
@@ -192,7 +194,6 @@ export async function updateMeeting(formData: FormData) {
     where: { id: String(formData.get("id")), clinicId: currentClinicId },
     data: {
       startsAt: new Date(String(formData.get("startsAt"))),
-      invoiceMeetingName: String(formData.get("invoiceMeetingName") || "") || null,
       tariff: String(formData.get("tariff")),
       workflowStatus: String(formData.get("workflowStatus")) as
         | "REGISTERED"
