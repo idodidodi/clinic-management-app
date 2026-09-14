@@ -82,8 +82,10 @@
   .row-actions { display: flex; align-items: flex-start; gap: 8px; white-space: nowrap; }
   .row-actions details { position: relative; }
   .row-actions summary { padding: 6px 8px; color: #1f6f63; cursor: pointer; list-style: none; }
-  .edit-form { position: absolute; z-index: 2; right: 0; display: grid; gap: 8px; min-width: 220px; padding: 12px; border: 1px solid #cbded8; border-radius: 10px; background: #fff; box-shadow: 0 12px 28px rgb(24 49 47 / 12%); }
-  .edit-form input, .edit-form select { padding: 8px; border: 1px solid #cbded8; border-radius: 6px; font: inherit; }
+  .edit-form { position: absolute; z-index: 2; right: 0; display: grid; gap: 8px; min-width: 260px; padding: 12px; border: 1px solid #cbded8; border-radius: 10px; background: #fff; box-shadow: 0 12px 28px rgb(24 49 47 / 12%); }
+  .edit-form label { display: grid; gap: 4px; color: #60736e; font-size: 12px; }
+  .edit-form input, .edit-form select { min-width: 0; padding: 10px 11px; border: 1px solid #cbded8; border-radius: 8px; color: #18312f; background: #fbfdfc; font: inherit; }
+  .edit-form-actions { display: flex; gap: 8px; }
   .dashboard-empty { padding: 48px; }
   @media (max-width: 800px) {
     .section-heading { align-items: stretch; flex-direction: column; }
