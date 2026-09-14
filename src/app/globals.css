@@ -32,8 +32,8 @@
   .settings-panel h2 { margin: 6px 0 16px; font-size: 20px; }
   .settings-tariff-input::-webkit-inner-spin-button, .settings-tariff-input::-webkit-outer-spin-button { margin: 0; appearance: none; }
   .settings-tariff-input { appearance: textfield; -moz-appearance: textfield; }
-  .settings-panel .inline-form label { position: relative; }
-  .unsaved-indicator { position: absolute; top: calc(100% + 4px); left: 0; color: #a35d20; font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .unsaved-indicator { display: block; min-height: 18px; margin-top: 4px; color: #a35d20; font-size: 13px; font-weight: 700; line-height: 18px; visibility: hidden; white-space: nowrap; }
+  .unsaved-indicator-visible { visibility: visible; }
   .dashboard-nav { justify-content: flex-start; margin: 38px 0 24px; overflow-x: auto; }
   .dashboard-nav button, .section-heading button { padding: 9px 13px; border: 0; border-radius: 8px; color: #60736e; background: transparent; font: inherit; cursor: pointer; }
   .dashboard-nav .nav-active { color: #fff; background: #1f6f63; }

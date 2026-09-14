@@ -165,7 +165,7 @@ function ClinicSettingsMenu({ defaultTariff }: { defaultTariff: string }) {
 
   return <div className="settings-menu" ref={menuRef}>
     <button type="button" className="settings-trigger" aria-label="Clinic settings" onClick={() => setOpen((current) => !current)}>⚙</button>
-    {open && <div className="settings-panel"><p className="kicker">Clinic settings</p><h2>Default tariff</h2><form className="inline-form" onSubmit={save}><label>Default tariff<input className="settings-tariff-input" name="defaultTariff" type="number" min="0" step="0.01" value={value} onChange={(event) => setValue(event.target.value)} required />{dirty && <span className="unsaved-indicator">Unsaved changes</span>}</label><button className="primary-button">Save tariff</button>{dirty && <button type="button" className="secondary-button" onClick={cancel}>Cancel</button>}</form></div>}
+    {open && <div className="settings-panel"><p className="kicker">Clinic settings</p><h2>Default tariff</h2><form className="inline-form" onSubmit={save}><label>Default tariff<input className="settings-tariff-input" name="defaultTariff" type="number" min="0" step="0.01" value={value} onChange={(event) => setValue(event.target.value)} required /><span className={`unsaved-indicator${dirty ? " unsaved-indicator-visible" : ""}`}>Unsaved changes</span></label><button className="primary-button">Save tariff</button>{dirty && <button type="button" className="secondary-button" onClick={cancel}>Cancel</button>}</form></div>}
   </div>;
 }
 
