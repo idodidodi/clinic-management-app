@@ -53,6 +53,8 @@
   .type-pill { display: inline-block; padding: 5px 8px; border-radius: 999px; color: #27675c; background: #e2f1eb; font-size: 12px; text-transform: capitalize; }
   .parent-list { color: #526d67; font-size: 13px; line-height: 1.6; }
   .section-heading { margin-bottom: 20px; }
+  .filter-row { display: flex; gap: 10px; align-items: center; }
+  .filter-row select { min-width: 130px; padding: 10px 11px; border: 1px solid #cbded8; border-radius: 8px; color: #18312f; background: #fbfdfc; font: inherit; }
   .section-heading input, .inline-form input, .inline-form select { min-width: 0; padding: 10px 11px; border: 1px solid #cbded8; border-radius: 8px; color: #18312f; background: #fbfdfc; font: inherit; }
   .inline-form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
   .inline-form input, .inline-form select { flex: 1 1 140px; }
@@ -70,7 +72,9 @@
   .dashboard-empty { padding: 48px; }
   @media (max-width: 800px) {
     .section-heading { align-items: stretch; flex-direction: column; }
-    .section-heading > input { width: 100%; }
+    .section-heading > input, .filter-row { width: 100%; }
+    .filter-row { align-items: stretch; flex-direction: column; }
+    .filter-row input, .filter-row select { width: 100%; }
     .client-add-form { width: min(620px, calc(100vw - 80px)); }
     .dashboard-grid { grid-template-columns: 1fr; }
     .dashboard-card-wide { grid-column: span 1; }
