@@ -35,6 +35,8 @@ The current domain model separates:
 - `ClientRelation`: an explicit connection between clients with a `PARENT`, `CHILD`, or `OTHER` relation type.
 - `Payer`: an optional payer who may be a client, a relative, or another person.
 - `Payment`: money received against a meeting, optionally linked to an invoice.
+- `Clinic.defaultTariff` and `ClinicTariff`: current default and optional meeting-type tariff settings.
+- `ClientTariff`: a tariff snapshot per client and meeting type. These values are created when a client is created and are not changed when clinic tariffs change.
 
 This means a grandmother can pay for a child's meeting without being registered as a client. The payment still resolves the meeting debt.
 
