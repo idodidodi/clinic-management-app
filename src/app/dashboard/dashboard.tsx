@@ -8,11 +8,17 @@ import { createClient, createMeeting, createPayment, deleteClient, deleteMeeting
 type Client = {
   id: string;
   fullName: string;
+  externalRef: string;
+  invoiceName?: string | null;
   clientType: string;
+  preferredContact?: string | null;
+  comments?: string | null;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
   email: string | null;
   phoneNumber?: string | null;
   familyAccountId: string;
-  familyAccount?: { accountName: string };
+  familyAccount?: { accountName: string; invoiceName?: string; invoiceDescription?: string | null; comments?: string | null };
   parentA?: { id: string; fullName: string; parentRole?: string | null } | null;
   parentB?: { id: string; fullName: string; parentRole?: string | null } | null;
   parentRole?: string | null;
@@ -115,7 +121,7 @@ export default function Dashboard({
         </section>
       )}
 
-      {tab === "clients" && <section className="dashboard-card"><div className="section-heading"><div><p className="kicker">Directory</p><div className="heading-with-action"><h2>Clients</h2><details className="add-menu"><summary aria-label="Add client or family">+</summary><div className="add-panel"><h3>Create parent client</h3><ClientForm /><h3>Add family member</h3><FamilyMemberForm clients={clients} /></div></details></div><p className="table-help">Start with a parent client, then add children, a second parent, or another family member.</p></div><div className="filter-row"><input placeholder="Filter by name" value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} /><select aria-label="Filter by client type" value={clientTypeFilter} onChange={(e) => setClientTypeFilter(e.target.value)}><option value="ALL">All types</option><option value="CHILD">Child</option><option value="PARENT">Parents</option><option value="OTHER">Other</option></select></div></div><table><thead><tr><th>Client</th><th>Type</th><th>Family members</th><th>Contact</th><th /></tr></thead><tbody>{filteredClients.map((client) => <tr id={`client-${client.id}`} key={client.id}><td><strong>{client.fullName}</strong><small className="muted-cell">{client.email || "No email"}</small></td><td><span className="type-pill">{client.clientType === "PARENT" ? client.parentRole === "DAD" ? "Dad" : client.parentRole === "OTHER" ? "Other" : "Mom" : client.clientType === "OTHER" ? "Other" : statusLabel(client.clientType)}</span></td><td><span className="parent-list">{relatedMembers(client).map((member) => <span key={`${client.id}-${member.id}`}><span className="muted-cell">{member.relationType.toLowerCase()}:</span> <a className="client-link" href={`#client-${member.id}`}>{member.fullName}</a><br /></span>)}</span></td><td>{client.phoneNumber || client.email || "—"}</td><td className="row-actions"><ClientEditDetails client={client} forceOpen={clientSettingsId === client.id} onClose={() => setClientSettingsId(null)} /><form action={deleteClient}><input type="hidden" name="id" value={client.id} /><button className="danger">Delete</button></form></td></tr>)}</tbody></table></section>}
+      {tab === "clients" && <section className="dashboard-card"><div className="section-heading"><div><p className="kicker">Directory</p><div className="heading-with-action"><h2>Clients</h2><details className="add-menu"><summary aria-label="Add client or family">+</summary><div className="add-panel"><h3>Create parent client</h3><ClientForm /><h3>Add family member</h3><FamilyMemberForm clients={clients} /></div></details></div><p className="table-help">Start with a parent client, then add children, a second parent, or another family member.</p></div><div className="filter-row"><input placeholder="Filter by name" value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} /><select aria-label="Filter by client type" value={clientTypeFilter} onChange={(e) => setClientTypeFilter(e.target.value)}><option value="ALL">All types</option><option value="CHILD">Child</option><option value="PARENT">Parents</option><option value="OTHER">Other</option></select></div></div><table><thead><tr><th>Client</th><th>Type</th><th>Family members</th><th>Contact</th><th /></tr></thead><tbody>{filteredClients.map((client) => <tr id={`client-${client.id}`} key={client.id}><td><strong>{client.fullName}</strong><small className="muted-cell">{client.email || "No email"}</small></td><td><span className="type-pill">{client.clientType === "PARENT" ? client.parentRole === "DAD" ? "Dad" : client.parentRole === "OTHER" ? "Other" : "Mom" : client.clientType === "OTHER" ? "Other" : statusLabel(client.clientType)}</span></td><td><span className="parent-list">{relatedMembers(client).map((member) => <span key={`${client.id}-${member.id}`}><span className="muted-cell">{member.relationType.toLowerCase()}:</span> <a className="client-link" href={`#client-${member.id}`}>{member.fullName}</a><br /></span>)}</span></td><td>{client.phoneNumber || client.email || "—"}</td><td className="row-actions"><button className="secondary-button" type="button" onClick={() => openClientSettings(client.id)}>View</button></td></tr>)}</tbody></table>{clients.map((client) => <ClientViewModal key={`modal-${client.id}`} client={client} open={clientSettingsId === client.id} onClose={() => setClientSettingsId(null)} />)}</section>}
       {tab === "meetings" && <section className="dashboard-card"><div className="section-heading"><div><p className="kicker">Calendar</p><h2>Meetings</h2></div></div><MeetingForm clients={clients} /><MeetingTable meetings={meetings} onDelete={deleteMeeting} dateFormat={dateFormat} onClientClick={openClientSettings} /></section>}
       {tab === "payments" && <section className="dashboard-card"><div className="section-heading"><div><p className="kicker">Cash flow</p><h2>Payments</h2></div><input placeholder="Filter by client" value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} /></div><PaymentForm meetings={meetings} payers={payers} invoices={invoices} dateFormat={dateFormat} /><table><thead><tr><th>Date</th><th>Client</th><th>Payer</th><th>Amount</th><th /></tr></thead><tbody>{filteredPayments.map((payment) => <tr key={payment.id}><td>{dateLabel(payment.paidAt, dateFormat)}</td><td>{payment.meeting.subjectClient.fullName}</td><td>{payment.payer?.fullName || payment.payerNameSnapshot || "Unidentified"}</td><td>{money(payment.amount)}</td><td className="row-actions"><details><summary>Edit</summary><form action={updatePayment} className="edit-form"><input type="hidden" name="id" value={payment.id} /><input name="amount" defaultValue={payment.amount} type="number" min="0" step="0.01" required /><input name="paidAt" defaultValue={payment.paidAt.slice(0, 10)} type="date" required /><input name="payerName" defaultValue={payment.payerNameSnapshot || payment.payer?.fullName || ""} /><button className="primary-button">Save</button></form></details><form action={deletePayment}><input type="hidden" name="id" value={payment.id} /><button className="danger">Delete</button></form></td></tr>)}</tbody></table></section>}
       {tab === "due" && <section className="dashboard-card"><div className="section-heading"><div><p className="kicker">Collections</p><h2>Due payments</h2></div><input placeholder="Filter by client" value={dueFilter} onChange={(e) => setDueFilter(e.target.value)} /></div><table><thead><tr><th>Date</th><th>Client</th><th>Status</th><th>Due</th></tr></thead><tbody>{filteredDue.map((row) => <tr key={row.meeting.id}><td>{dateLabel(row.meeting.startsAt, dateFormat)}</td><td>{row.meeting.subjectClient.fullName}</td><td>{statusLabel(row.meeting.workflowStatus)}</td><td>{money(row.due.toString())}</td></tr>)}</tbody></table></section>}
@@ -132,24 +138,44 @@ function FamilyMemberForm({ clients }: { clients: Client[] }) {
   return <form className="inline-form client-add-form" action={createClient}><input name="fullName" required placeholder="Family member full name" /><input name="invoiceName" placeholder="Invoice name" /><select name="parentClientId" required><option value="">Connect to parent client</option>{parents.map((client) => <option key={client.id} value={client.id}>{client.fullName}</option>)}</select><select name="clientType" defaultValue="CHILD"><option value="CHILD">Child</option><option value="PARENT">Parent</option><option value="OTHER">Other family member</option></select><select name="parentRole" defaultValue="OTHER"><option value="OTHER">Other</option><option value="MOM">Mom</option><option value="DAD">Dad</option></select><TariffInputs /><button className="primary-button">Add member</button></form>;
 }
 
-function ClientEditDetails({ client, forceOpen, onClose }: { client: Client; forceOpen: boolean; onClose: () => void }) {
-  const [open, setOpen] = useState(forceOpen);
-  const detailsRef = useRef<HTMLDetailsElement>(null);
-  const isOpen = open || forceOpen;
-
+function ClientViewModal({ client, open, onClose }: { client: Client; open: boolean; onClose: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!isOpen) return;
+    if (!open) return;
     const handleOutsideClick = (event: MouseEvent) => {
-      if (detailsRef.current && !detailsRef.current.contains(event.target as Node)) {
-        setOpen(false);
-        onClose();
-      }
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) onClose();
     };
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [isOpen, onClose]);
+  }, [onClose, open]);
 
-  return <details ref={detailsRef} open={isOpen} onToggle={(event) => { const nextOpen = event.currentTarget.open; setOpen(nextOpen); if (!nextOpen) onClose(); }}><summary>Edit</summary><form action={updateClient} className="edit-form"><input type="hidden" name="id" value={client.id} /><label>Full name<input name="fullName" defaultValue={client.fullName} required /></label>{(client.clientType === "CHILD" || client.clientType === "PARENT") && <label>Phone number<input name="phoneNumber" defaultValue={client.phoneNumber || ""} type="tel" placeholder="Phone number" /></label>}<label>Email<input name="email" defaultValue={client.email || ""} type="email" placeholder="Email address" /></label><TariffInputs client={client} /><div className="edit-form-actions"><button className="primary-button">Save</button><button type="reset" className="secondary-button" onClick={() => { setOpen(false); onClose(); }}>Cancel</button></div></form></details>;
+  const fields: [string, string][] = [
+    ["External reference", client.externalRef],
+    ["Full name", client.fullName],
+    ["Invoice name", client.invoiceName || "—"],
+    ["Client type", client.clientType],
+    ["Parent role", client.parentRole || "—"],
+    ["Phone number", client.phoneNumber || "—"],
+    ["Email", client.email || "—"],
+    ["Preferred contact", client.preferredContact || "—"],
+    ["Comments", client.comments || "—"],
+    ["Family account", client.familyAccount?.accountName || "—"],
+    ["Family invoice name", client.familyAccount?.invoiceName || "—"],
+    ["Invoice description", client.familyAccount?.invoiceDescription || "—"],
+    ["Family comments", client.familyAccount?.comments || "—"],
+    ["Created", client.createdAt ? new Date(client.createdAt).toLocaleString() : "—"],
+    ["Updated", client.updatedAt ? new Date(client.updatedAt).toLocaleString() : "—"],
+  ];
+  return <div className={`client-modal-backdrop${open ? " client-modal-open" : ""}`} aria-hidden={!open}><div className="client-modal" ref={modalRef} role="dialog" aria-modal="true" aria-label={`${client.fullName} details`}>
+    {!editing ? <><div className="client-modal-header"><div><p className="kicker">Client details</p><h2>{client.fullName}</h2></div><button type="button" className="modal-close" onClick={onClose} aria-label="Close">×</button></div><div className="client-fields">{fields.map(([label, value]) => <div className="client-field" key={label}><div><span>{label}</span><strong>{value}</strong></div><CopyButton value={value} /></div>)}</div><div className="client-modal-actions"><button type="button" className="primary-button" onClick={() => setEditing(true)}>Edit</button><button type="button" className="danger" onClick={() => setConfirmDelete(true)}>Delete</button></div>{confirmDelete && <div className="delete-confirmation"><p>Delete this client? This cannot be undone.</p><form action={deleteClient}><input type="hidden" name="id" value={client.id} /><button className="danger">Confirm delete</button><button type="button" className="secondary-button" onClick={() => setConfirmDelete(false)}>Cancel</button></form></div>}</> : <><div className="client-modal-header"><div><p className="kicker">Edit client</p><h2>{client.fullName}</h2></div><button type="button" className="modal-close" onClick={onClose} aria-label="Close">×</button></div><form action={updateClient} className="edit-form-modal"><input type="hidden" name="id" value={client.id} /><label>Full name<input name="fullName" defaultValue={client.fullName} required /></label>{(client.clientType === "CHILD" || client.clientType === "PARENT") && <label>Phone number<input name="phoneNumber" defaultValue={client.phoneNumber || ""} type="tel" placeholder="Phone number" /></label>}<label>Email<input name="email" defaultValue={client.email || ""} type="email" placeholder="Email address" /></label><label>Invoice name<input name="invoiceName" defaultValue={client.invoiceName || ""} /></label><label>Preferred contact<select name="preferredContact" defaultValue={client.preferredContact || ""}><option value="">Not specified</option><option value="EMAIL">Email</option><option value="WHATSAPP">WhatsApp</option></select></label><label>Comments<textarea name="comments" defaultValue={client.comments || ""} /></label><TariffInputs client={client} /><div className="edit-form-actions"><button className="primary-button">Save</button><button type="button" className="secondary-button" onClick={() => setEditing(false)}>Cancel</button></div></form></>}
+  </div></div>;
+}
+
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  return <button type="button" className="copy-button" onClick={() => { void navigator.clipboard.writeText(value).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); }); }}>{copied ? "Copied" : "Copy"}</button>;
 }
 
 function TariffInputs({ client }: { client?: Client }) {

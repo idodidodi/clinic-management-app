@@ -105,8 +105,14 @@ export async function updateClient(formData: FormData) {
       where: { id, clinicId: currentClinicId },
       data: {
         fullName: String(formData.get("fullName")),
+        invoiceName: String(formData.get("invoiceName") || "") || null,
         email: String(formData.get("email") || "") || null,
         phoneNumber: String(formData.get("phoneNumber") || "") || null,
+        preferredContact: (String(formData.get("preferredContact") || "") || null) as
+          | "WHATSAPP"
+          | "EMAIL"
+          | null,
+        comments: String(formData.get("comments") || "") || null,
       },
     }),
     ...(["CHILD", "PARENT_A", "PARENT_B", "BOTH_PARENTS"] as const)

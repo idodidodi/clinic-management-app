@@ -17,7 +17,7 @@ export default async function DashboardPage() {
       prisma.client.findMany({
         where: { clinicId },
         include: {
-          familyAccount: { select: { accountName: true } },
+          familyAccount: { select: { accountName: true, invoiceName: true, invoiceDescription: true, comments: true } },
           parentA: { select: { id: true, fullName: true, parentRole: true } },
           parentB: { select: { id: true, fullName: true, parentRole: true } },
           tariffs: true,
