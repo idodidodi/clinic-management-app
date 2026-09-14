@@ -26,6 +26,25 @@ async function main() {
 
   const clinicId = owner.memberships[0].clinicId;
   const clinic = await prisma.clinic.findUniqueOrThrow({ where: { id: clinicId } });
+  const legacyPairMeetingIds = [
+    "seed-meeting-both-separate",
+    ...Array.from({ length: 10 }, (_, index) => `seed-meeting-regular-${index + 1}-both-1`),
+    ...Array.from({ length: 10 }, (_, index) => `seed-meeting-regular-${index + 1}-both-2`),
+  ];
+  await prisma.payment.deleteMany({ where: { meetingId: { in: legacyPairMeetingIds } } });
+  await prisma.invoice.deleteMany({ where: { meetingId: { in: legacyPairMeetingIds } } });
+  await prisma.meeting.deleteMany({ where: { id: { in: legacyPairMeetingIds } } });
+  await prisma.client.deleteMany({
+    where: {
+      clinicId: clinic.id,
+      id: {
+        in: [
+          "seed-client-rivera-both-parents",
+          ...Array.from({ length: 10 }, (_, index) => `seed-client-regular-${index + 1}-both-parents`),
+        ],
+      },
+    },
+  });
 
   const familyOne = await prisma.familyAccount.upsert({
     where: { id: "seed-family-rivera" },
@@ -107,17 +126,6 @@ async function main() {
     phoneNumber: "+1 555 0103",
     preferredContact: "WHATSAPP",
   });
-  const bothParentsRivera = await upsertClient({
-    id: "seed-client-rivera-both-parents",
-    clinicId: clinic.id,
-    familyAccountId: familyOne.id,
-    externalRef: "SEED-RIVERA-BOTH",
-    fullName: "Demo Parent Pair One",
-    invoiceName: "Demo Family One",
-    clientType: "BOTH_PARENTS",
-    preferredContact: "EMAIL",
-  });
-
   await prisma.client.update({
     where: { id: childRivera.id },
     data: { parentAId: parentARivera.id, parentBId: parentBRivera.id },
@@ -225,7 +233,7 @@ async function main() {
     {
       id: "seed-meeting-both-separate",
       familyAccountId: familyOne.id,
-      subjectClientId: bothParentsRivera.id,
+      subjectClientId: parentARivera.id,
       parentAId: parentARivera.id,
       parentBId: parentBRivera.id,
       type: "BOTH_PARENTS" as const,
@@ -420,17 +428,6 @@ async function main() {
       email: `regular.parent.b.${familyNumber}@example.test`,
       preferredContact: "WHATSAPP",
     });
-    const bothParents = await upsertClient({
-      id: `seed-client-regular-${familyNumber}-both-parents`,
-      clinicId: clinic.id,
-      familyAccountId: family.id,
-      externalRef: `SEED-REGULAR-${familyNumber}-BOTH`,
-      fullName: `Demo Parent Pair ${familyNumber + 2}`,
-      invoiceName: family.invoiceName,
-      clientType: "BOTH_PARENTS",
-      preferredContact: "EMAIL",
-    });
-
     // Keep the demo distribution realistic: nine of ten regular families have one child.
     const childCount = familyNumber === 10 ? 2 : 1;
     for (let childNumber = 1; childNumber <= childCount; childNumber += 1) {
@@ -466,7 +463,7 @@ async function main() {
       id: `seed-meeting-regular-${familyNumber}-both-1`,
       clinicId: clinic.id,
       familyAccountId: family.id,
-      subjectClientId: bothParents.id,
+      subjectClientId: parentA.id,
       parentAId: parentA.id,
       parentBId: parentB.id,
       type: "BOTH_PARENTS",
@@ -478,7 +475,7 @@ async function main() {
       id: `seed-meeting-regular-${familyNumber}-both-2`,
       clinicId: clinic.id,
       familyAccountId: family.id,
-      subjectClientId: bothParents.id,
+      subjectClientId: parentA.id,
       parentAId: parentA.id,
       parentBId: parentB.id,
       type: "BOTH_PARENTS",
