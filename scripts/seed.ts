@@ -369,6 +369,22 @@ async function main() {
       accountName: `Demo Family ${familyNumber + 2}`,
       invoiceName: `Demo Family ${familyNumber + 2}`,
     });
+    const childMeetingPrefix = `seed-meeting-regular-${familyNumber}-child-`;
+    await prisma.payment.deleteMany({
+      where: { meeting: { id: { startsWith: childMeetingPrefix } } },
+    });
+    await prisma.invoice.deleteMany({
+      where: { meeting: { id: { startsWith: childMeetingPrefix } } },
+    });
+    await prisma.meeting.deleteMany({
+      where: { id: { startsWith: childMeetingPrefix } },
+    });
+    await prisma.client.deleteMany({
+      where: {
+        familyAccountId: family.id,
+        externalRef: { startsWith: `SEED-REGULAR-${familyNumber}-CHILD-` },
+      },
+    });
     const parentA = await upsertClient({
       id: `seed-client-regular-${familyNumber}-parent-a`,
       clinicId: clinic.id,
@@ -404,7 +420,7 @@ async function main() {
       preferredContact: "EMAIL",
     });
 
-    for (let childNumber = 1; childNumber <= 6; childNumber += 1) {
+    for (let childNumber = 1; childNumber <= 2; childNumber += 1) {
       const child = await upsertClient({
         id: `seed-client-regular-${familyNumber}-child-${childNumber}`,
         clinicId: clinic.id,
