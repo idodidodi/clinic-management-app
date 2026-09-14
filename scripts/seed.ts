@@ -692,7 +692,7 @@ async function createSeedMeeting(data: {
       parentBId: data.parentBId,
       startsAt: new Date("2026-09-11T10:00:00.000Z"),
       type: data.type,
-      invoiceMeetingName: data.type === "CHILD" ? "Child therapy session" : "Parent consultation",
+      invoiceMeetingName: data.type === "CHILD" ? "Art therapy" : "Professional guidance",
       status: "COMPLETED",
       tariff: data.tariff,
       billingArrangement: data.billingArrangement,
