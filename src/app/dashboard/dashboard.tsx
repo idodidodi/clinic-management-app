@@ -98,7 +98,7 @@ export default function Dashboard({
       {tab === "overview" && (
         <section className="dashboard-grid">
           <article className="dashboard-card dashboard-card-wide"><p className="kicker">Outstanding</p><strong>{money(due.reduce((sum, row) => sum + row.due, 0).toString())}</strong><span>{due.length} meetings need attention</span></article>
-          <article className="dashboard-card"><p className="kicker">Clients</p><strong>{clients.length}</strong><span>Across {families.length} family accounts</span></article>
+          <article className="dashboard-card"><p className="kicker">Families</p><strong>{families.length}</strong><span>Family accounts with connected clients</span></article>
           <article className="dashboard-card"><p className="kicker">Payments</p><strong>{payments.length}</strong><span>Recorded locally</span></article>
           <section className="dashboard-card"><p className="kicker">User settings</p><h2>Date format</h2><DateFormatForm dateFormat={dateFormat} /></section>
           <section className="dashboard-card dashboard-card-wide"><div className="section-heading"><h2>Recent meetings</h2><button onClick={() => setTab("meetings")}>View all</button></div><MeetingTable meetings={meetings.slice(0, 8)} onDelete={deleteMeeting} dateFormat={dateFormat} /></section>
