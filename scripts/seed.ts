@@ -379,11 +379,22 @@ async function main() {
     await prisma.meeting.deleteMany({
       where: { id: { startsWith: childMeetingPrefix } },
     });
-    await prisma.client.deleteMany({
+    const seededChildren = await prisma.client.findMany({
       where: {
         familyAccountId: family.id,
         externalRef: { startsWith: `SEED-REGULAR-${familyNumber}-CHILD-` },
       },
+      select: { id: true },
+    });
+    const seededChildIds = seededChildren.map((child) => child.id);
+    if (seededChildIds.length > 0) {
+      const childMeetings = { subjectClientId: { in: seededChildIds } };
+      await prisma.payment.deleteMany({ where: { meeting: childMeetings } });
+      await prisma.invoice.deleteMany({ where: { meeting: childMeetings } });
+      await prisma.meeting.deleteMany({ where: childMeetings });
+    }
+    await prisma.client.deleteMany({
+      where: { id: { in: seededChildIds } },
     });
     const parentA = await upsertClient({
       id: `seed-client-regular-${familyNumber}-parent-a`,
@@ -420,7 +431,9 @@ async function main() {
       preferredContact: "EMAIL",
     });
 
-    for (let childNumber = 1; childNumber <= 2; childNumber += 1) {
+    // Keep the demo distribution realistic: nine of ten regular families have one child.
+    const childCount = familyNumber === 10 ? 2 : 1;
+    for (let childNumber = 1; childNumber <= childCount; childNumber += 1) {
       const child = await upsertClient({
         id: `seed-client-regular-${familyNumber}-child-${childNumber}`,
         clinicId: clinic.id,
