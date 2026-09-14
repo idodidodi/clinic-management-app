@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { createClient, createMeeting, createPayment, deleteClient, deleteMeeting, deletePayment, updateClient, updateClinicTariffs, updateMeeting, updatePayment, updateUserSettings } from "./actions";
+import { createClient, createMeeting, createPayment, deleteClient, deleteMeeting, deletePayment, updateClient, updateClinicTariff, updateMeeting, updatePayment, updateUserSettings } from "./actions";
 
 type Client = {
   id: string;
@@ -51,13 +51,12 @@ const relatedMembers = (client: Client) => {
 };
 
 export default function Dashboard({
-  clinicName, clients, families, meetings, payments, invoices, payers, defaultTariff, clinicTariffs, dateFormat,
+  clinicName, clients, families, meetings, payments, invoices, payers, defaultTariff, dateFormat,
 }: {
   clinicName: string; clients: Client[]; families: { id: string; accountName: string }[];
   meetings: Meeting[]; payments: Payment[]; invoices: { id: string; amount: string; meetingId: string }[];
   payers: { id: string; fullName: string }[];
   defaultTariff: string;
-  clinicTariffs: { meetingType: string; tariff: string }[];
   dateFormat: string;
 }) {
   const [tab, setTab] = useState("overview");
@@ -85,7 +84,7 @@ export default function Dashboard({
     <main className="dashboard-shell">
       <header className="dashboard-header">
         <div><p className="kicker">Manager workspace</p><h1>{clinicName}</h1></div>
-        <Link href="/" className="dashboard-home">Home</Link>
+        <div className="dashboard-header-actions"><Link href="/" className="dashboard-home">Home</Link><details className="settings-menu"><summary aria-label="Clinic settings">⚙</summary><div className="settings-panel"><p className="kicker">Clinic settings</p><h2>Default tariff</h2><TariffForm defaultTariff={defaultTariff} /></div></details></div>
       </header>
       <nav className="dashboard-nav" aria-label="Dashboard sections">
         {["overview", "clients", "meetings", "payments", "due"].map((item) => (
@@ -109,7 +108,6 @@ export default function Dashboard({
       {tab === "meetings" && <section className="dashboard-card"><div className="section-heading"><div><p className="kicker">Calendar</p><h2>Meetings</h2></div></div><MeetingForm clients={clients} /><MeetingTable meetings={meetings} onDelete={deleteMeeting} dateFormat={dateFormat} /></section>}
       {tab === "payments" && <section className="dashboard-card"><div className="section-heading"><div><p className="kicker">Cash flow</p><h2>Payments</h2></div><input placeholder="Filter by client" value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} /></div><PaymentForm meetings={meetings} payers={payers} invoices={invoices} dateFormat={dateFormat} /><table><thead><tr><th>Date</th><th>Client</th><th>Payer</th><th>Amount</th><th /></tr></thead><tbody>{filteredPayments.map((payment) => <tr key={payment.id}><td>{dateLabel(payment.paidAt, dateFormat)}</td><td>{payment.meeting.subjectClient.fullName}</td><td>{payment.payer?.fullName || payment.payerNameSnapshot || "Unidentified"}</td><td>{money(payment.amount)}</td><td className="row-actions"><details><summary>Edit</summary><form action={updatePayment} className="edit-form"><input type="hidden" name="id" value={payment.id} /><input name="amount" defaultValue={payment.amount} type="number" min="0" step="0.01" required /><input name="paidAt" defaultValue={payment.paidAt.slice(0, 10)} type="date" required /><input name="payerName" defaultValue={payment.payerNameSnapshot || payment.payer?.fullName || ""} /><button className="primary-button">Save</button></form></details><form action={deletePayment}><input type="hidden" name="id" value={payment.id} /><button className="danger">Delete</button></form></td></tr>)}</tbody></table></section>}
       {tab === "due" && <section className="dashboard-card"><div className="section-heading"><div><p className="kicker">Collections</p><h2>Due payments</h2></div><input placeholder="Filter by client" value={dueFilter} onChange={(e) => setDueFilter(e.target.value)} /></div><table><thead><tr><th>Date</th><th>Client</th><th>Status</th><th>Due</th></tr></thead><tbody>{filteredDue.map((row) => <tr key={row.meeting.id}><td>{dateLabel(row.meeting.startsAt, dateFormat)}</td><td>{row.meeting.subjectClient.fullName}</td><td>{statusLabel(row.meeting.workflowStatus)}</td><td>{money(row.due.toString())}</td></tr>)}</tbody></table></section>}
-      {tab === "overview" && <section className="dashboard-card"><div className="section-heading"><div><p className="kicker">Clinic settings</p><h2>Tariffs</h2></div></div><TariffForm defaultTariff={defaultTariff} clinicTariffs={clinicTariffs} /></section>}
     </main>
   );
 }
@@ -133,9 +131,8 @@ function MeetingForm({ clients }: { clients: Client[] }) {
   return <form className="inline-form" action={createMeeting}><select name="type" value={type} onChange={(event) => setType(event.target.value)} required><option value="">Meeting type</option><option value="CHILD">Child meeting</option><option value="PARENT_A">Mom meeting</option><option value="PARENT_B">Dad meeting</option><option value="BOTH_PARENTS">Mom + Dad meeting</option></select><select name="clientId" required><option value="">Client</option>{eligible.map((client) => <option key={client.id} value={client.id}>{client.fullName}</option>)}</select><input name="startsAt" type="date" defaultValue={new Date().toISOString().slice(0, 10)} /><button className="primary-button">Add meeting</button></form>;
 }
 
-function TariffForm({ defaultTariff, clinicTariffs }: { defaultTariff: string; clinicTariffs: { meetingType: string; tariff: string }[] }) {
-  const value = (type: string) => clinicTariffs.find((tariff) => tariff.meetingType === type)?.tariff || "";
-  return <form className="inline-form" action={updateClinicTariffs}><label>Default tariff<input name="defaultTariff" type="number" min="0" step="0.01" defaultValue={defaultTariff} required /></label>{["CHILD", "PARENT_A", "PARENT_B", "BOTH_PARENTS"].map((type) => <label key={type}>{statusLabel(type)} override<input name={`tariff-${type}`} type="number" min="0" step="0.01" defaultValue={value(type)} placeholder="Uses default" /></label>)}<button className="primary-button">Save tariffs</button></form>;
+function TariffForm({ defaultTariff }: { defaultTariff: string }) {
+  return <form className="inline-form" action={updateClinicTariff}><label>Default tariff<input name="defaultTariff" type="number" min="0" step="0.01" defaultValue={defaultTariff} required /></label><button className="primary-button">Save tariff</button></form>;
 }
 
 function DateFormatForm({ dateFormat }: { dateFormat: string }) {

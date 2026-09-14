@@ -587,7 +587,6 @@ async function main() {
       });
     }
   }
-  const clinicTariffs = await prisma.clinicTariff.findMany({ where: { clinicId: clinic.id } });
   const clinicForTariffs = await prisma.clinic.findUniqueOrThrow({ where: { id: clinic.id } });
   const seededClients = await prisma.client.findMany({ where: { clinicId: clinic.id }, select: { id: true } });
   for (const client of seededClients) {
@@ -595,7 +594,7 @@ async function main() {
       data: (["CHILD", "PARENT_A", "PARENT_B", "BOTH_PARENTS"] as const).map((meetingType) => ({
         clientId: client.id,
         meetingType,
-        tariff: clinicTariffs.find((item) => item.meetingType === meetingType)?.tariff ?? clinicForTariffs.defaultTariff,
+        tariff: clinicForTariffs.defaultTariff,
       })),
       skipDuplicates: true,
     });

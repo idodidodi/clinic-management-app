@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   const clinicId = owner?.memberships[0]?.clinicId;
   if (!clinicId) return <p className="dashboard-empty">Complete setup first.</p>;
 
-  const [clinic, clients, families, meetings, payments, invoices, payers, clinicTariffs] =
+  const [clinic, clients, families, meetings, payments, invoices, payers] =
     await Promise.all([
       prisma.clinic.findUniqueOrThrow({ where: { id: clinicId } }),
       prisma.client.findMany({
@@ -39,7 +39,6 @@ export default async function DashboardPage() {
       }),
       prisma.invoice.findMany({ where: { clinicId } }),
       prisma.payer.findMany({ where: { clinicId }, orderBy: { fullName: "asc" } }),
-      prisma.clinicTariff.findMany({ where: { clinicId } }),
     ]);
 
   return (
@@ -78,7 +77,6 @@ export default async function DashboardPage() {
       invoices={invoices.map((invoice) => ({ ...invoice, amount: invoice.amount.toString() }))}
       payers={payers}
       defaultTariff={clinic.defaultTariff.toString()}
-      clinicTariffs={clinicTariffs.map((tariff) => ({ meetingType: tariff.meetingType, tariff: tariff.tariff.toString() }))}
       dateFormat={owner.dateFormat}
     />
   );

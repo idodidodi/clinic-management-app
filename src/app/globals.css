@@ -25,6 +25,12 @@
 
   .dashboard-header h1 { margin-top: 8px; font-size: 34px; letter-spacing: -0.04em; }
   .dashboard-home { color: #1f6f63; font-weight: 700; }
+  .dashboard-header-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+  .settings-menu { position: relative; }
+  .settings-menu summary { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid #cbded8; border-radius: 9px; color: #1f6f63; background: #fff; font-size: 20px; cursor: pointer; list-style: none; }
+  .settings-menu summary::-webkit-details-marker { display: none; }
+  .settings-panel { position: absolute; z-index: 5; top: 44px; right: 0; width: min(340px, calc(100vw - 48px)); padding: 20px; border: 1px solid #cbded8; border-radius: 12px; background: #fff; box-shadow: 0 14px 32px rgb(24 49 47 / 14%); }
+  .settings-panel h2 { margin: 6px 0 16px; font-size: 20px; }
   .dashboard-nav { justify-content: flex-start; margin: 38px 0 24px; overflow-x: auto; }
   .dashboard-nav button, .section-heading button { padding: 9px 13px; border: 0; border-radius: 8px; color: #60736e; background: transparent; font: inherit; cursor: pointer; }
   .dashboard-nav .nav-active { color: #fff; background: #1f6f63; }

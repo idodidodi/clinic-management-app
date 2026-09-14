@@ -35,7 +35,7 @@ export async function createClient(formData: FormData) {
   const fullName = String(formData.get("fullName"));
   const invoiceName = String(formData.get("invoiceName") || fullName);
   await prisma.$transaction(async (tx) => {
-    const clinic = await tx.clinic.findUniqueOrThrow({ where: { id: currentClinicId }, include: { tariffOverrides: true } });
+    const clinic = await tx.clinic.findUniqueOrThrow({ where: { id: currentClinicId } });
     let familyAccountId = parentClientId
       ? (await tx.client.findFirstOrThrow({ where: { id: parentClientId, clinicId: currentClinicId } })).familyAccountId
       : "";
@@ -80,7 +80,6 @@ export async function createClient(formData: FormData) {
         clientId: client.id,
         meetingType,
         tariff: String(formData.get(`tariff-${meetingType}`) || "")
-          || clinic.tariffOverrides.find((item) => item.meetingType === meetingType)?.tariff
           || clinic.defaultTariff,
       })),
     });
@@ -134,7 +133,7 @@ export async function createMeeting(formData: FormData) {
     where: { id: clientId, clinicId: currentClinicId },
     include: { tariffs: true },
   });
-  const clinic = await prisma.clinic.findUniqueOrThrow({ where: { id: currentClinicId }, include: { tariffOverrides: true } });
+  const clinic = await prisma.clinic.findUniqueOrThrow({ where: { id: currentClinicId } });
   const familyAccountId = selectedClient.familyAccountId;
   const familyClients = await prisma.client.findMany({ where: { familyAccountId, clinicId: currentClinicId } });
   const parents = familyClients.filter((client) => client.clientType === "PARENT");
@@ -152,7 +151,6 @@ export async function createMeeting(formData: FormData) {
     throw new Error("The selected family does not have the clients required for this meeting type.");
   }
   const tariff = selectedClient.tariffs.find((item) => item.meetingType === type)?.tariff
-    ?? clinic.tariffOverrides.find((item) => item.meetingType === type)?.tariff
     ?? clinic.defaultTariff;
   await prisma.meeting.create({
     data: {
@@ -174,20 +172,10 @@ export async function createMeeting(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-export async function updateClinicTariffs(formData: FormData) {
+export async function updateClinicTariff(formData: FormData) {
   const currentClinicId = await clinicId();
   const defaultTariff = String(formData.get("defaultTariff"));
   await prisma.clinic.update({ where: { id: currentClinicId }, data: { defaultTariff } });
-  for (const meetingType of ["CHILD", "PARENT_A", "PARENT_B", "BOTH_PARENTS"] as const) {
-    const value = String(formData.get(`tariff-${meetingType}`) || "");
-    if (value) {
-      await prisma.clinicTariff.upsert({
-        where: { clinicId_meetingType: { clinicId: currentClinicId, meetingType } },
-        update: { tariff: value },
-        create: { clinicId: currentClinicId, meetingType, tariff: value },
-      });
-    }
-  }
   revalidatePath("/dashboard");
 }
 
