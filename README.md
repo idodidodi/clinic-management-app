@@ -37,6 +37,7 @@ The current domain model separates:
 - `Payment`: money received against a meeting, optionally linked to an invoice.
 - `Clinic.defaultTariff` and `ClinicTariff`: current default and optional meeting-type tariff settings.
 - `ClientTariff`: a tariff snapshot per client and meeting type. These values are created when a client is created and are not changed when clinic tariffs change.
+- `User.dateFormat`: each user's display preference for dates. New users default to `DD/MM/YYYY`; supported formats are `DD/MM/YYYY`, `MM/DD/YYYY`, and `YYYY-MM-DD`.
 
 This means a grandmother can pay for a child's meeting without being registered as a client. The payment still resolves the meeting debt.
 

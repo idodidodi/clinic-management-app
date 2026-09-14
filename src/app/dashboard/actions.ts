@@ -12,6 +12,20 @@ const clinicId = async () => {
   return owner.memberships[0].clinicId;
 };
 
+const currentUser = async () => {
+  const owner = await prisma.user.findUniqueOrThrow({ where: { email: "owner@example.test" } });
+  return owner;
+};
+
+export async function updateUserSettings(formData: FormData) {
+  const user = await currentUser();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { dateFormat: String(formData.get("dateFormat")) as "DD_MM_YYYY" | "MM_DD_YYYY" | "YYYY_MM_DD" },
+  });
+  revalidatePath("/dashboard");
+}
+
 export async function createClient(formData: FormData) {
   const id = String(formData.get("id") || crypto.randomUUID());
   const currentClinicId = await clinicId();

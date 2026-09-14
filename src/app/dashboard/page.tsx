@@ -79,6 +79,7 @@ export default async function DashboardPage() {
       payers={payers}
       defaultTariff={clinic.defaultTariff.toString()}
       clinicTariffs={clinicTariffs.map((tariff) => ({ meetingType: tariff.meetingType, tariff: tariff.tariff.toString() }))}
+      dateFormat={owner.dateFormat}
     />
   );
 }
